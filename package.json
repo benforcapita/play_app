@@ -7,6 +7,12 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
+    "test:watch": "ng test --watch",
+    "test:coverage": "ng test --code-coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
+    "test:all": "npm run test && npm run test:e2e",
     "serve:ssr:play-app": "node dist/play-app/server/server.mjs"
   },
   "prettier": {
@@ -41,6 +47,7 @@
     "@types/express": "^5.0.1",
     "@types/jasmine": "~5.1.0",
     "@types/node": "^20.17.19",
+    "@playwright/test": "^1.40.0",
     "jasmine-core": "~5.8.0",
     "karma": "~6.4.0",
     "karma-chrome-launcher": "~3.2.0",
