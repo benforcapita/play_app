@@ -68,6 +68,4 @@ module.exports = function (config) {
     captureTimeout: 60000,
     reportSlowerThan: 5000
   });
-};
-  });
 }; 
