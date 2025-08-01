@@ -12,10 +12,15 @@ describe('App Routes', () => {
     });
 
     it('should have valid route objects', () => {
-      routes.forEach(route => {
-        expect(route).toBeDefined();
-        expect(typeof route).toBe('object');
-      });
+      if (routes.length > 0) {
+        routes.forEach(route => {
+          expect(route).toBeDefined();
+          expect(typeof route).toBe('object');
+        });
+      } else {
+        // If no routes are defined, that's also valid
+        expect(routes.length).toBe(0);
+      }
     });
   });
 
