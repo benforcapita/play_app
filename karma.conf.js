@@ -29,7 +29,7 @@ module.exports = function (config) {
       reporters: [
         { type: 'html' },
         { type: 'text-summary' },
-        { type: 'lcov' },
+        { type: 'lcovonly', file: 'lcov.info' },
         { type: 'json' }
       ],
       check: {
@@ -66,20 +66,8 @@ module.exports = function (config) {
     browserDisconnectTolerance: 3,
     browserNoActivityTimeout: 60000,
     captureTimeout: 60000,
-    reportSlowerThan: 5000,
-    // Add custom middleware for better test reporting
-    middleware: ['karma-coverage'],
-    // Configure coverage thresholds
-    coverageIstanbulReporter: {
-      dir: require('path').join(__dirname, 'coverage'),
-      reports: ['html', 'lcovonly', 'text-summary'],
-      fixWebpackSourcePaths: true,
-      thresholds: {
-        statements: 80,
-        lines: 80,
-        branches: 80,
-        functions: 80
-      }
-    }
+    reportSlowerThan: 5000
+  });
+};
   });
 }; 
