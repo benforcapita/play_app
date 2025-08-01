@@ -106,8 +106,12 @@ jobs:
       run: npm ci
     
     - name: Install Playwright browsers
-      run: npx playwright install --with-deps chromium webkit
-    
+      run: |
+        if [ "${{ matrix.device }}" = "mobile-chrome" ]; then
+          npx playwright install --with-deps chromium
+        else
+          npx playwright install --with-deps webkit
+        fi
     - name: Build the application
       run: npm run build
     
