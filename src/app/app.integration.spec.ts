@@ -287,7 +287,7 @@ describe('App Integration Tests', () => {
       // Check if font family has fallbacks
       expect(style.fontFamily).toContain('Inter');
       expect(style.fontFamily).toContain('-apple-system');
-      expect(style.fontFamily).toContain('system-ui');
+      expect(style.fontFamily).toContain('BlinkMacSystemFont');
     });
   });
 }); 

@@ -12,10 +12,17 @@ describe('App Routes', () => {
     });
 
     it('should have valid route objects', () => {
-      routes.forEach(route => {
-        expect(route).toBeDefined();
-        expect(typeof route).toBe('object');
-      });
+      // Since routes array is currently empty, we just verify the structure
+      expect(routes).toBeDefined();
+      expect(Array.isArray(routes)).toBe(true);
+      
+      // If there are routes, they should be valid objects
+      if (routes.length > 0) {
+        routes.forEach(route => {
+          expect(route).toBeDefined();
+          expect(typeof route).toBe('object');
+        });
+      }
     });
   });
 
