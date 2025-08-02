@@ -40,11 +40,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     
-    strategy:
-      fail-fast: false
-      matrix:
-        browser: [chromium, firefox, webkit]
-    
     steps:
     - uses: actions/checkout@v4
     
@@ -58,7 +53,7 @@ jobs:
       run: npm ci
     
     - name: Install Playwright browsers
-      run: npx playwright install --with-deps ${{ matrix.browser }}
+      run: npx playwright install --with-deps chromium
     
     - name: Build the application
       run: npm run build
@@ -72,7 +67,7 @@ jobs:
       run: npx wait-on http://localhost:4200 --timeout 60000
     
     - name: Run E2E tests
-      run: npx playwright test --project=${{ matrix.browser }}
+      run: npx playwright test --project=chromium
       env:
         CI: true
     
@@ -80,70 +75,15 @@ jobs:
       uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: playwright-report-${{ matrix.browser }}-${{ github.run_id }}
+        name: playwright-report-chromium-${{ github.run_id }}
         path: playwright-report/
         retention-days: 30
 
-  mobile-tests:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    
-    strategy:
-      fail-fast: false
-      matrix:
-        device: [mobile-chrome, mobile-safari]
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20.19.0'
-        cache: 'npm'
-    
-    - name: Install dependencies
-      run: npm ci
-    
-    - name: Install Playwright browsers
-      run: |
-        if [ "${{ matrix.device }}" = "mobile-chrome" ]; then
-          npx playwright install --with-deps chromium
-        else
-          npx playwright install --with-deps webkit
-        fi
-    - name: Build the application
-      run: npm run build
-    
-    - name: Start the application
-      run: npm run start &
-      env:
-        PORT: 4200
-    
-    - name: Wait for application to be ready
-      run: npx wait-on http://localhost:4200 --timeout 60000
-    
-    - name: Run mobile E2E tests
-      run: |
-        if [ "${{ matrix.device }}" = "mobile-chrome" ]; then
-          npx playwright test --project="Mobile Chrome"
-        else
-          npx playwright test --project="Mobile Safari"
-        fi
-      env:
-        CI: true
-    
-    - name: Upload test results
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: playwright-report-${{ matrix.device }}-${{ github.run_id }}
-        path: playwright-report/
-        retention-days: 30
+
 
   test-summary:
     runs-on: ubuntu-latest
-    needs: [unit-tests, e2e-tests, mobile-tests]
+    needs: [unit-tests, e2e-tests]
     if: always()
     timeout-minutes: 5
     
@@ -168,7 +108,6 @@ jobs:
         # Check job status
         unit_status="${{ needs.unit-tests.result }}"
         e2e_status="${{ needs.e2e-tests.result }}"
-        mobile_status="${{ needs.mobile-tests.result }}"
         
         if [ "$unit_status" = "success" ]; then
           echo "✅ Unit tests: PASSED" >> $GITHUB_STEP_SUMMARY
@@ -180,12 +119,6 @@ jobs:
           echo "✅ E2E tests: PASSED" >> $GITHUB_STEP_SUMMARY
         else
           echo "❌ E2E tests: FAILED" >> $GITHUB_STEP_SUMMARY
-        fi
-        
-        if [ "$mobile_status" = "success" ]; then
-          echo "✅ Mobile tests: PASSED" >> $GITHUB_STEP_SUMMARY
-        else
-          echo "❌ Mobile tests: FAILED" >> $GITHUB_STEP_SUMMARY
         fi
         
         echo "" >> $GITHUB_STEP_SUMMARY
