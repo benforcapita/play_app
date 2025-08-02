@@ -26,11 +26,11 @@ WORKDIR /app
 # Copy the published application
 COPY --from=publish /app/publish .
 
-# Expose port 80
-EXPOSE 80
+# Expose port 8080
+EXPOSE 8080
 
-# Set environment variable to listen on port 80
-ENV ASPNETCORE_HTTP_PORTS=80
+# Set environment variable to listen on port 8080
+ENV ASPNETCORE_HTTP_PORTS=8080
 
 # Set the entry point
 ENTRYPOINT ["dotnet", "play_app_api.dll"] 

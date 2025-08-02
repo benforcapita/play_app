@@ -9,7 +9,7 @@ IMAGE_NAME="play-app-api"
 TAG="dev"
 CONTAINER_NAME="play-app-api-container"
 HOST_PORT="3000"
-CONTAINER_PORT="80"
+CONTAINER_PORT="8080"
 
 # Colors for output
 RED='\033[0;31m'
