@@ -38,8 +38,9 @@ print_error() {
 # Check if CR_PAT is set
 if [ -z "$CR_PAT" ]; then
     print_error "CR_PAT environment variable is not set!"
-    print_error "Please set your GitHub Container Registry token:"
-    print_error "export CR_PAT=your_github_token_here"
+    print_error "Please add your GitHub Container Registry token to ~/.zshrc:"
+    print_error "echo 'export CR_PAT=your_github_token_here' >> ~/.zshrc"
+    print_error "Then reload with: source ~/.zshrc"
     exit 1
 fi
 
@@ -54,7 +55,7 @@ print_status "Building and pushing image: ${FULL_IMAGE_NAME}"
 
 # Build the image
 print_status "Building Docker image..."
-docker build -t "${FULL_IMAGE_NAME}" .
+docker build --platform linux/amd64 -t "${FULL_IMAGE_NAME}" .
 
 # Login to GitHub Container Registry
 print_status "Logging in to GitHub Container Registry..."

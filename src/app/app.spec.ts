@@ -4,151 +4,30 @@ import { RouterTestingModule } from '@angular/router/testing';
 import { RouterOutlet } from '@angular/router';
 import { By } from '@angular/platform-browser';
 import { App } from './app';
+import { ApiService } from './core/services/api.service';
+import { of, throwError } from 'rxjs';
 
 describe('App', () => {
+  let mockApiService: jasmine.SpyObj<ApiService>;
+
   beforeEach(async () => {
+    const spy = jasmine.createSpyObj('ApiService', ['getPing', 'getHealth']);
+    
     await TestBed.configureTestingModule({
       imports: [App, RouterTestingModule],
-      providers: [provideZonelessChangeDetection()]
+      providers: [
+        provideZonelessChangeDetection(),
+        { provide: ApiService, useValue: spy }
+      ]
     }).compileComponents();
+
+    mockApiService = TestBed.inject(ApiService) as jasmine.SpyObj<ApiService>;
   });
 
   it('should create the app', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
     expect(app).toBeTruthy();
-  });
-
-  it('should render title', () => {
-    const fixture = TestBed.createComponent(App);
-    fixture.detectChanges();
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain('Hello, play-app');
-  });
-
-  it('should have the correct title signal value', () => {
-    const fixture = TestBed.createComponent(App);
-    fixture.detectChanges();
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain('play-app');
-  });
-
-  it('should render the Angular logo', () => {
-    const fixture = TestBed.createComponent(App);
-    fixture.detectChanges();
-    const compiled = fixture.nativeElement as HTMLElement;
-    const logo = compiled.querySelector('.angular-logo');
-    expect(logo).toBeTruthy();
-  });
-
-  it('should render the congratulations message', () => {
-    const fixture = TestBed.createComponent(App);
-    fixture.detectChanges();
-    const compiled = fixture.nativeElement as HTMLElement;
-    const message = compiled.querySelector('p');
-    expect(message?.textContent).toContain('Congratulations! Your app is running. 🎉');
-  });
-
-  it('should render all navigation pills', () => {
-    const fixture = TestBed.createComponent(App);
-    fixture.detectChanges();
-    const compiled = fixture.nativeElement as HTMLElement;
-    const pills = compiled.querySelectorAll('.pill');
-    expect(pills.length).toBe(6);
-  });
-
-  it('should have correct pill titles', () => {
-    const fixture = TestBed.createComponent(App);
-    fixture.detectChanges();
-    const compiled = fixture.nativeElement as HTMLElement;
-    const pills = compiled.querySelectorAll('.pill');
-    
-    const expectedTitles = [
-      'Explore the Docs',
-      'Learn with Tutorials',
-      'Prompt and best practices for AI',
-      'CLI Docs',
-      'Angular Language Service',
-      'Angular DevTools'
-    ];
-
-    pills.forEach((pill, index) => {
-      expect(pill.textContent?.trim()).toContain(expectedTitles[index]);
-    });
-  });
-
-  it('should have correct pill links', () => {
-    const fixture = TestBed.createComponent(App);
-    fixture.detectChanges();
-    const compiled = fixture.nativeElement as HTMLElement;
-    const pills = compiled.querySelectorAll('.pill') as NodeListOf<HTMLAnchorElement>;
-    
-    const expectedLinks = [
-      'https://angular.dev',
-      'https://angular.dev/tutorials',
-      'https://angular.dev/ai/develop-with-ai',
-      'https://angular.dev/tools/cli',
-      'https://angular.dev/tools/language-service',
-      'https://angular.dev/tools/devtools'
-    ];
-
-          pills.forEach((pill, index) => {
-        // Only the base URL gets a trailing slash added by the browser
-        const expectedUrl = expectedLinks[index] === 'https://angular.dev' 
-          ? expectedLinks[index] + '/' 
-          : expectedLinks[index];
-        expect(pill.href).toBe(expectedUrl);
-      });
-  });
-
-  it('should have proper target and rel attributes on pills', () => {
-    const fixture = TestBed.createComponent(App);
-    fixture.detectChanges();
-    const compiled = fixture.nativeElement as HTMLElement;
-    const pills = compiled.querySelectorAll('.pill') as NodeListOf<HTMLAnchorElement>;
-    
-    pills.forEach(pill => {
-      expect(pill.target).toBe('_blank');
-      expect(pill.rel).toBe('noopener');
-    });
-  });
-
-  it('should render social media links', () => {
-    const fixture = TestBed.createComponent(App);
-    fixture.detectChanges();
-    const compiled = fixture.nativeElement as HTMLElement;
-    const socialLinks = compiled.querySelectorAll('.social-links a');
-    expect(socialLinks.length).toBe(3);
-  });
-
-  it('should have correct social media URLs', () => {
-    const fixture = TestBed.createComponent(App);
-    fixture.detectChanges();
-    const compiled = fixture.nativeElement as HTMLElement;
-    const socialLinks = compiled.querySelectorAll('.social-links a') as NodeListOf<HTMLAnchorElement>;
-    
-    const expectedUrls = [
-      'https://github.com/angular/angular',
-      'https://twitter.com/angular',
-      'https://www.youtube.com/channel/UCbn1OgGei-DV7aSRo_HaAiw'
-    ];
-
-    socialLinks.forEach((link, index) => {
-      expect(link.href).toBe(expectedUrls[index]);
-    });
-  });
-
-  it('should have proper accessibility attributes on social links', () => {
-    const fixture = TestBed.createComponent(App);
-    fixture.detectChanges();
-    const compiled = fixture.nativeElement as HTMLElement;
-    const socialLinks = compiled.querySelectorAll('.social-links a') as NodeListOf<HTMLAnchorElement>;
-    
-    socialLinks.forEach(link => {
-      expect(link.target).toBe('_blank');
-      expect(link.rel).toBe('noopener');
-      expect(link.getAttribute('aria-label')).toBeTruthy();
-    });
   });
 
   it('should have router outlet', () => {
@@ -158,85 +37,184 @@ describe('App', () => {
     expect(routerOutlet).toBeTruthy();
   });
 
-  it('should have proper CSS classes for styling', () => {
-    const fixture = TestBed.createComponent(App);
-    fixture.detectChanges();
-    const compiled = fixture.nativeElement as HTMLElement;
-    
-    expect(compiled.querySelector('.main')).toBeTruthy();
-    expect(compiled.querySelector('.content')).toBeTruthy();
-    expect(compiled.querySelector('.left-side')).toBeTruthy();
-    expect(compiled.querySelector('.right-side')).toBeTruthy();
-    expect(compiled.querySelector('.divider')).toBeTruthy();
-    expect(compiled.querySelector('.pill-group')).toBeTruthy();
-    expect(compiled.querySelector('.social-links')).toBeTruthy();
-  });
-
-  it('should have proper semantic HTML structure', () => {
-    const fixture = TestBed.createComponent(App);
-    fixture.detectChanges();
-    const compiled = fixture.nativeElement as HTMLElement;
-    
-    expect(compiled.querySelector('main')).toBeTruthy();
-    expect(compiled.querySelector('h1')).toBeTruthy();
-    expect(compiled.querySelector('p')).toBeTruthy();
-    expect(compiled.querySelector('a')).toBeTruthy();
-  });
-
-  it('should have proper ARIA attributes', () => {
-    const fixture = TestBed.createComponent(App);
-    fixture.detectChanges();
-    const compiled = fixture.nativeElement as HTMLElement;
-    
-    const divider = compiled.querySelector('.divider');
-    expect(divider?.getAttribute('role')).toBe('separator');
-    expect(divider?.getAttribute('aria-label')).toBe('Divider');
-  });
-
-  it('should have SVG icons with proper attributes', () => {
-    const fixture = TestBed.createComponent(App);
-    fixture.detectChanges();
-    const compiled = fixture.nativeElement as HTMLElement;
-    
-    const svgs = compiled.querySelectorAll('svg');
-    expect(svgs.length).toBeGreaterThan(0);
-    
-    svgs.forEach(svg => {
-      expect(svg.getAttribute('xmlns')).toBe('http://www.w3.org/2000/svg');
+  // API Service Test Buttons
+  describe('API Service Test Buttons', () => {
+    it('should render API test container', () => {
+      const fixture = TestBed.createComponent(App);
+      fixture.detectChanges();
+      const compiled = fixture.nativeElement as HTMLElement;
+      
+      expect(compiled.querySelector('.api-test-container')).toBeTruthy();
+      expect(compiled.querySelector('.api-test-container h2')?.textContent).toContain('API Service Test');
     });
-  });
 
-  it('should have responsive design elements', () => {
-    const fixture = TestBed.createComponent(App);
-    fixture.detectChanges();
-    const compiled = fixture.nativeElement as HTMLElement;
-    
-    // Check for CSS custom properties that indicate responsive design
-    const style = window.getComputedStyle(compiled);
-    expect(style.getPropertyValue('--bright-blue')).toBeTruthy();
-    expect(style.getPropertyValue('--electric-violet')).toBeTruthy();
-  });
+    it('should render both API test buttons', () => {
+      const fixture = TestBed.createComponent(App);
+      fixture.detectChanges();
+      const compiled = fixture.nativeElement as HTMLElement;
+      
+      const pingButton = compiled.querySelector('.ping-button') as HTMLButtonElement;
+      const healthButton = compiled.querySelector('.health-button') as HTMLButtonElement;
+      
+      expect(pingButton).toBeTruthy();
+      expect(healthButton).toBeTruthy();
+      expect(pingButton.textContent?.trim()).toBe('Test Ping API');
+      expect(healthButton.textContent?.trim()).toBe('Test Health API');
+    });
 
-  it('should have proper color scheme variables', () => {
-    const fixture = TestBed.createComponent(App);
-    fixture.detectChanges();
-    const compiled = fixture.nativeElement as HTMLElement;
-    
-    const style = window.getComputedStyle(compiled);
-    const colorVars = [
-      '--bright-blue',
-      '--electric-violet',
-      '--french-violet',
-      '--vivid-pink',
-      '--hot-red',
-      '--orange-red',
-      '--gray-900',
-      '--gray-700',
-      '--gray-400'
-    ];
-    
-    colorVars.forEach(colorVar => {
-      expect(style.getPropertyValue(colorVar)).toBeTruthy();
+    it('should have proper button attributes', () => {
+      const fixture = TestBed.createComponent(App);
+      fixture.detectChanges();
+      const compiled = fixture.nativeElement as HTMLElement;
+      
+      const buttons = compiled.querySelectorAll('.api-button') as NodeListOf<HTMLButtonElement>;
+      
+      buttons.forEach(button => {
+        expect(button.type).toBe('button');
+        expect(button.disabled).toBe(false);
+        expect(button.classList.contains('api-button')).toBe(true);
+      });
+    });
+
+    it('should call checkPing when ping button is clicked', () => {
+      const fixture = TestBed.createComponent(App);
+      const app = fixture.componentInstance;
+      fixture.detectChanges();
+      
+      const pingButton = fixture.nativeElement.querySelector('.ping-button') as HTMLButtonElement;
+      
+      spyOn(app, 'checkPing');
+      pingButton.click();
+      
+      expect(app.checkPing).toHaveBeenCalled();
+    });
+
+    it('should call checkHealth when health button is clicked', () => {
+      const fixture = TestBed.createComponent(App);
+      const app = fixture.componentInstance;
+      fixture.detectChanges();
+      
+      const healthButton = fixture.nativeElement.querySelector('.health-button') as HTMLButtonElement;
+      
+      spyOn(app, 'checkHealth');
+      healthButton.click();
+      
+      expect(app.checkHealth).toHaveBeenCalled();
+    });
+
+    it('should display ping result when API call succeeds', () => {
+      const mockPingResult = { message: 'pong', timestamp: '2023-01-01T00:00:00Z' };
+      mockApiService.getPing.and.returnValue(of(mockPingResult));
+      
+      const fixture = TestBed.createComponent(App);
+      const app = fixture.componentInstance;
+      fixture.detectChanges();
+      
+      app.checkPing();
+      fixture.detectChanges();
+      
+      const resultDisplay = fixture.nativeElement.querySelector('.result-display');
+      expect(resultDisplay).toBeTruthy();
+      expect(resultDisplay.textContent).toContain('Ping Result:');
+      expect(resultDisplay.textContent).toContain('pong');
+    });
+
+    it('should display health result when API call succeeds', () => {
+      const mockHealthResult = 'Service is healthy';
+      mockApiService.getHealth.and.returnValue(of(mockHealthResult));
+      
+      const fixture = TestBed.createComponent(App);
+      const app = fixture.componentInstance;
+      fixture.detectChanges();
+      
+      app.checkHealth();
+      fixture.detectChanges();
+      
+      const resultDisplay = fixture.nativeElement.querySelector('.result-display');
+      expect(resultDisplay).toBeTruthy();
+      expect(resultDisplay.textContent).toContain('Health Result:');
+      expect(resultDisplay.textContent).toContain('Service is healthy');
+    });
+
+    it('should display error message when API call fails', () => {
+      const mockError = new Error('Network error');
+      mockApiService.getPing.and.returnValue(throwError(() => mockError));
+      
+      const fixture = TestBed.createComponent(App);
+      const app = fixture.componentInstance;
+      fixture.detectChanges();
+      
+      app.checkPing();
+      fixture.detectChanges();
+      
+      const errorMessage = fixture.nativeElement.querySelector('.error-message');
+      expect(errorMessage).toBeTruthy();
+      expect(errorMessage.textContent).toContain('Error:');
+      expect(errorMessage.textContent).toContain('Network error');
+    });
+
+    it('should clear previous results when making new API calls', () => {
+      const mockPingResult = { message: 'pong' };
+      const mockHealthResult = 'Service is healthy';
+      
+      mockApiService.getPing.and.returnValue(of(mockPingResult));
+      mockApiService.getHealth.and.returnValue(of(mockHealthResult));
+      
+      const fixture = TestBed.createComponent(App);
+      const app = fixture.componentInstance;
+      fixture.detectChanges();
+      
+      // First call ping
+      app.checkPing();
+      fixture.detectChanges();
+      
+      let resultDisplays = fixture.nativeElement.querySelectorAll('.result-display');
+      expect(resultDisplays.length).toBe(1);
+      expect(resultDisplays[0].textContent).toContain('Ping Result:');
+      
+      // Then call health
+      app.checkHealth();
+      fixture.detectChanges();
+      
+      resultDisplays = fixture.nativeElement.querySelectorAll('.result-display');
+      expect(resultDisplays.length).toBe(1);
+      expect(resultDisplays[0].textContent).toContain('Health Result:');
+    });
+
+    it('should have proper CSS classes for API test elements', () => {
+      const fixture = TestBed.createComponent(App);
+      fixture.detectChanges();
+      const compiled = fixture.nativeElement as HTMLElement;
+      
+      expect(compiled.querySelector('.api-test-container')).toBeTruthy();
+      expect(compiled.querySelector('.button-container')).toBeTruthy();
+      expect(compiled.querySelector('.results-container')).toBeTruthy();
+      expect(compiled.querySelector('.ping-button')).toBeTruthy();
+      expect(compiled.querySelector('.health-button')).toBeTruthy();
+    });
+
+    it('should have proper signal values for API state management', () => {
+      const fixture = TestBed.createComponent(App);
+      const app = fixture.componentInstance;
+      
+      expect(app.result()).toBeNull();
+      expect(app.healthText()).toBeNull();
+      expect(app.error()).toBeNull();
+    });
+
+    it('should update signals when API calls are made', () => {
+      const mockPingResult = { message: 'pong' };
+      mockApiService.getPing.and.returnValue(of(mockPingResult));
+      
+      const fixture = TestBed.createComponent(App);
+      const app = fixture.componentInstance;
+      fixture.detectChanges();
+      
+      app.checkPing();
+      fixture.detectChanges();
+      
+      expect(app.result()).toEqual(mockPingResult);
+      expect(app.error()).toBeNull();
     });
   });
 });

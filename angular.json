@@ -21,7 +21,6 @@
         "build": {
           "builder": "@angular/build:application",
           "options": {
-            "serviceWorker": true,
             "tsConfig": "tsconfig.app.json",
             "inlineStyleLanguage": "scss",
             "assets": [
