@@ -12,7 +12,7 @@ public static class CharacterEndpoint
         //List 
         chars.MapGet("/", async (AppDb db) => await db.Characters.ToListAsync());
         //Get by id
-        chars.MapGet("/{id;int}", async (AppDb db, string id) => await db.Characters.FindAsync(id) is {} c ? Results.Ok(c) : Results.NotFound());
+        chars.MapGet("/{id:int}", async (AppDb db, int id) => await db.Characters.FindAsync(id) is {} c ? Results.Ok(c) : Results.NotFound());
         //Create
         chars.MapPost("/", async (AppDb db, Character character) => {
             await db.Characters.AddAsync(character);
@@ -20,7 +20,7 @@ public static class CharacterEndpoint
             return Results.Created($"/api/characters/{character.Id}", character);
         });
         //Update
-        chars.MapPut("/{id;int}", async (AppDb db, string id, Character character) => {
+        chars.MapPut("/{id:int}", async (AppDb db, int id, Character character) => {
             var c = await db.Characters.FindAsync(id);
             if (c is null) return Results.NotFound();
             c.Name = character.Name;
@@ -31,7 +31,7 @@ public static class CharacterEndpoint
             return Results.Ok(c);
         });
         //Delete
-        chars.MapDelete("/{id;int}", async (AppDb db, string id) => {
+        chars.MapDelete("/{id:int}", async (AppDb db, int id) => {
             var c = await db.Characters.FindAsync(id);
             if (c is null) return Results.NotFound();
             db.Characters.Remove(c);

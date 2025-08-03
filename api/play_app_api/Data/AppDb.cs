@@ -13,15 +13,12 @@ public class AppDb : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         var c = modelBuilder.Entity<Character>();
-
         // Treat Character.Sheet as an owned object graph
-         var opts = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+        var opts = new JsonSerializerOptions(JsonSerializerDefaults.Web);
         c.Property(x => x.Sheet)
-         .HasConversion(
-             v => JsonSerializer.Serialize(v, opts),          // to store
-             v => JsonSerializer.Deserialize<CharacterSheet>(v, opts) ?? new CharacterSheet())
-         .HasColumnType("json");
-        
-        
+            .HasConversion(
+                v => JsonSerializer.Serialize(v, opts),          // to store
+                v => JsonSerializer.Deserialize<CharacterSheet>(v, opts) ?? new CharacterSheet())
+            .HasColumnType("json");
     }
 }

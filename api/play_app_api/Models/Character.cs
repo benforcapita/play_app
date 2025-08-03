@@ -2,7 +2,7 @@ namespace play_app_api;
 
 public class Character
 {
-    public string Id { get; set; } = "";
+    public int Id { get; set; } = 0;
 
     public string Name { get; set; } = "";
     
