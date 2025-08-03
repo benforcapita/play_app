@@ -18,16 +18,16 @@ public class Item
 
 public class Currency 
 { 
-    [JsonPropertyName("cp")] public int Cp { get; set; }; 
-    [JsonPropertyName("sp")] public int Sp { get; set; }; 
-    [JsonPropertyName("ep")] public int Ep { get; set; }; 
-    [JsonPropertyName("gp")] public int Gp { get; set; }; 
+    [JsonPropertyName("cp")] public int Cp { get; set; }
+    [JsonPropertyName("sp")] public int Sp { get; set; }
+    [JsonPropertyName("ep")] public int Ep { get; set; }
+    [JsonPropertyName("gp")] public int Gp { get; set; }
     [JsonPropertyName("pp")] public int Pp { get; set; } 
 }
 
 public class CarryingCapacity 
 { 
-    [JsonPropertyName("weightCarried")] public float WeightCarried { get; set; }; 
-    [JsonPropertyName("encumbered")] public float Encumbered { get; set; }; 
+    [JsonPropertyName("weightCarried")] public float WeightCarried { get; set; }
+    [JsonPropertyName("encumbered")] public float Encumbered { get; set; } 
     [JsonPropertyName("pushDragLift")] public float PushDragLift { get; set; } 
 } 

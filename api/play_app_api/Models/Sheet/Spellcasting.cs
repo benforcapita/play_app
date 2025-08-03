@@ -28,7 +28,7 @@ public class SpellSlots
 
 public class Slot 
 { 
-    [JsonPropertyName("total")] public int Total { get; set; }; 
+    [JsonPropertyName("total")] public int Total { get; set; }
     [JsonPropertyName("used")] public int Used { get; set; } 
 }
 
@@ -48,7 +48,7 @@ public class Spell
 
 public class SpellAttack 
 { 
-    [JsonPropertyName("bonus")] public int Bonus { get; set; }; 
+    [JsonPropertyName("bonus")] public int Bonus { get; set; }
     [JsonPropertyName("damage")] public string Damage { get; set; } = ""; 
 }
 

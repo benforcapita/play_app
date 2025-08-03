@@ -30,7 +30,7 @@ public class HitDice
 
 public class DeathSaves 
 { 
-    [JsonPropertyName("successes")] public int Successes { get; set; }; 
+    [JsonPropertyName("successes")] public int Successes { get; set; }
     [JsonPropertyName("failures")] public int Failures { get; set; } 
 }
 

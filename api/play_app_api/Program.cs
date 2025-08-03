@@ -1,3 +1,7 @@
+using Microsoft.EntityFrameworkCore;
+using play_app_api.ApiEndpoints;
+using play_app_api.Data;
+
 namespace play_app_api;
 
 public class Program
@@ -24,6 +28,8 @@ public class Program
         });
 
         builder.Services.AddEndpointsApiExplorer();
+        builder.Services.AddDbContext<AppDb>(opt =>
+            opt.UseInMemoryDatabase("app"));
 
         var app = builder.Build();
         app.UseCors(SwaCors);
@@ -31,6 +37,7 @@ public class Program
         // Example health/ping endpoints
         app.MapGet("/ping", () => Results.Ok(new { ok = true, at = DateTimeOffset.UtcNow }));
         app.MapGet("/health", () => Results.Ok("OK"));
+        app.MapCharacterEndpoints();
 
         app.Run();
     }
