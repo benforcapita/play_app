@@ -1,8 +1,32 @@
+// CSS Variables for consistent theming and smaller file size
+:root {
+  --primary-blue: #007bff;
+  --primary-blue-dark: #0056b3;
+  --primary-blue-darker: #004085;
+  --success-green: #28a745;
+  --success-green-dark: #1e7e34;
+  --info-cyan: #17a2b8;
+  --info-cyan-dark: #117a8b;
+  --danger-red: #dc3545;
+  --danger-red-dark: #c82333;
+  --gray-light: #f8f9fa;
+  --gray: #6c757d;
+  --gray-dark: #495057;
+  --gray-darker: #343a40;
+  --border-color: #ddd;
+  --border-radius: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 15px;
+  --spacing-lg: 20px;
+  --box-shadow-focus: 0 0 0 2px rgba(0, 123, 255, 0.25);
+  --transition-fast: 0.2s;
+}
+
 .api-test-container {
-  margin: 20px;
-  padding: 20px;
+  margin: var(--spacing-lg);
+  padding: var(--spacing-lg);
   border: 1px solid #ccc;
-  border-radius: 8px;
+  border-radius: var(--spacing-sm);
   background-color: #f9f9f9;
 
   h2 {
@@ -11,9 +35,9 @@
   }
 
   .input-container {
-    margin-bottom: 15px;
+    margin-bottom: var(--spacing-md);
     display: flex;
-    gap: 15px;
+    gap: var(--spacing-md);
     align-items: center;
     flex-wrap: wrap;
 
@@ -24,14 +48,14 @@
 
     input, select {
       padding: 5px 10px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
       font-size: 14px;
 
       &:focus {
         outline: none;
-        border-color: #007bff;
-        box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+        border-color: var(--primary-blue);
+        box-shadow: var(--box-shadow-focus);
       }
     }
   }
@@ -40,46 +64,46 @@
     display: flex;
     gap: 10px;
     flex-wrap: wrap;
-    margin-bottom: 20px;
+    margin-bottom: var(--spacing-lg);
   }
 
   .api-button {
-    padding: 10px 20px;
-    background-color: #007bff;
+    padding: 10px var(--spacing-lg);
+    background-color: var(--primary-blue);
     color: white;
     border: none;
-    border-radius: 4px;
+    border-radius: var(--border-radius);
     cursor: pointer;
     font-size: 14px;
-    transition: background-color 0.2s;
+    transition: background-color var(--transition-fast);
 
     &:hover:not(:disabled) {
-      background-color: #0056b3;
+      background-color: var(--primary-blue-dark);
     }
 
     &:disabled {
-      background-color: #6c757d;
+      background-color: var(--gray);
       cursor: not-allowed;
     }
 
     &.ping-button {
-      background-color: #28a745;
+      background-color: var(--success-green);
       &:hover:not(:disabled) {
-        background-color: #1e7e34;
+        background-color: var(--success-green-dark);
       }
     }
 
     &.health-button {
-      background-color: #17a2b8;
+      background-color: var(--info-cyan);
       &:hover:not(:disabled) {
-        background-color: #117a8b;
+        background-color: var(--info-cyan-dark);
       }
     }
 
     &.delete-button {
-      background-color: #dc3545;
+      background-color: var(--danger-red);
       &:hover:not(:disabled) {
-        background-color: #c82333;
+        background-color: var(--danger-red-dark);
       }
     }
   }
@@ -90,12 +114,12 @@
       background-color: #f8d7da;
       color: #721c24;
       border: 1px solid #f5c6cb;
-      border-radius: 4px;
+      border-radius: var(--border-radius);
       margin-bottom: 10px;
     }
 
     .result-display {
-      margin-bottom: 15px;
+      margin-bottom: var(--spacing-md);
 
       h3 {
         margin-bottom: 10px;
@@ -103,15 +127,14 @@
       }
 
       pre {
-        background-color: #f8f9fa;
+        background-color: var(--gray-light);
         border: 1px solid #e9ecef;
-        border-radius: 4px;
+        border-radius: var(--border-radius);
         padding: 10px;
-        overflow-x: auto;
+        overflow: auto;
         white-space: pre-wrap;
         word-wrap: break-word;
         max-height: 400px;
-        overflow-y: auto;
       }
     }
   }
@@ -119,25 +142,25 @@
   // Extraction-specific styles
   .extraction-container {
     .file-upload-section {
-      margin-bottom: 20px;
+      margin-bottom: var(--spacing-lg);
       
       label {
         display: block;
-        margin-bottom: 8px;
+        margin-bottom: var(--spacing-sm);
         font-weight: bold;
         color: #555;
       }
       
       input[type="file"] {
-        padding: 8px;
+        padding: var(--spacing-sm);
         border: 2px dashed #ccc;
-        border-radius: 4px;
+        border-radius: var(--border-radius);
         background-color: #fafafa;
         width: 100%;
         cursor: pointer;
         
         &:hover:not(:disabled) {
-          border-color: #007bff;
+          border-color: var(--primary-blue);
           background-color: #f0f8ff;
         }
         
@@ -149,31 +172,31 @@
     }
     
     .job-status-panel {
-      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-      border: 2px solid #007bff;
-      border-radius: 8px;
-      padding: 20px;
-      margin-bottom: 20px;
+      background: linear-gradient(135deg, var(--gray-light) 0%, #e9ecef 100%);
+      border: 2px solid var(--primary-blue);
+      border-radius: var(--spacing-sm);
+      padding: var(--spacing-lg);
+      margin-bottom: var(--spacing-lg);
       box-shadow: 0 2px 8px rgba(0, 123, 255, 0.1);
       
       .job-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 15px;
+        margin-bottom: var(--spacing-md);
         flex-wrap: wrap;
         gap: 10px;
         
         h4 {
           margin: 0;
-          color: #0056b3;
+          color: var(--primary-blue-dark);
           font-size: 18px;
         }
         
         .job-token {
-          background-color: #343a40;
+          background-color: var(--gray-darker);
           padding: 6px 10px;
-          border-radius: 4px;
+          border-radius: var(--border-radius);
           font-size: 11px;
           
           strong {
@@ -181,7 +204,7 @@
           }
           
           code {
-            color: #28a745;
+            color: var(--success-green);
             font-weight: bold;
             background: none;
             padding: 0;
@@ -191,11 +214,11 @@
       
       .status-indicator {
         text-align: center;
-        margin-bottom: 15px;
+        margin-bottom: var(--spacing-md);
         
         .status-badge {
           display: inline-block;
-          padding: 8px 16px;
+          padding: var(--spacing-sm) 16px;
           border-radius: 20px;
           font-weight: bold;
           font-size: 14px;
@@ -212,18 +235,18 @@
           &.completed {
             background-color: #d4edda;
             color: #155724;
-            border: 2px solid #28a745;
+            border: 2px solid var(--success-green);
           }
           
           &.failed {
             background-color: #f8d7da;
             color: #721c24;
-            border: 2px solid #dc3545;
+            border: 2px solid var(--danger-red);
           }
           
           &.unknown {
             background-color: #e2e3e5;
-            color: #6c757d;
+            color: var(--gray);
             border: 2px solid #adb5bd;
           }
         }
@@ -231,10 +254,10 @@
       
       .status-check-controls {
         text-align: center;
-        margin-bottom: 15px;
+        margin-bottom: var(--spacing-md);
         
         .status-check-button {
-          background-color: #17a2b8;
+          background-color: var(--info-cyan);
           font-weight: bold;
           
           &:hover:not(:disabled) {
@@ -245,8 +268,8 @@
         
         .last-updated {
           display: block;
-          margin-top: 8px;
-          color: #6c757d;
+          margin-top: var(--spacing-sm);
+          color: var(--gray);
           font-style: italic;
         }
       }
@@ -254,16 +277,16 @@
       .job-timeline {
         background-color: #ffffff;
         border: 1px solid #dee2e6;
-        border-radius: 4px;
+        border-radius: var(--border-radius);
         padding: 12px;
-        margin-bottom: 15px;
+        margin-bottom: var(--spacing-md);
         
         .timeline-item {
           padding: 4px 0;
           font-size: 13px;
           
           strong {
-            color: #495057;
+            color: var(--gray-dark);
             min-width: 80px;
             display: inline-block;
           }
@@ -273,7 +296,7 @@
       .section-results {
         h5 {
           margin-bottom: 12px;
-          color: #495057;
+          color: var(--gray-dark);
           font-size: 16px;
         }
         
@@ -285,7 +308,7 @@
           .section-item {
             background-color: #ffffff;
             border: 1px solid #dee2e6;
-            border-radius: 4px;
+            border-radius: var(--border-radius);
             padding: 10px;
             display: flex;
             justify-content: space-between;
@@ -293,18 +316,18 @@
             flex-wrap: wrap;
             
             &.success {
-              border-left: 4px solid #28a745;
+              border-left: 4px solid var(--success-green);
               background-color: #f8fff9;
             }
             
             &.error {
-              border-left: 4px solid #dc3545;
+              border-left: 4px solid var(--danger-red);
               background-color: #fff8f8;
             }
             
             .section-name {
               font-weight: 500;
-              color: #495057;
+              color: var(--gray-dark);
               flex: 1;
               text-transform: capitalize;
             }
@@ -317,7 +340,7 @@
               width: 100%;
               margin-top: 5px;
               font-size: 12px;
-              color: #dc3545;
+              color: var(--danger-red);
               font-style: italic;
             }
           }
@@ -332,21 +355,21 @@
       justify-content: center;
       
       .result-button {
-        background-color: #28a745;
+        background-color: var(--success-green);
         &:hover:not(:disabled) {
-          background-color: #1e7e34;
+          background-color: var(--success-green-dark);
           transform: translateY(-2px);
         }
         
         &:disabled {
-          background-color: #6c757d;
+          background-color: var(--gray);
           cursor: not-allowed;
           opacity: 0.6;
         }
       }
       
       .clear-button {
-        background-color: #6c757d;
+        background-color: var(--gray);
         &:hover:not(:disabled) {
           background-color: #545b62;
           transform: translateY(-2px);
@@ -357,24 +380,17 @@
   
   // Animation for pulsing status
   @keyframes pulse {
-    0% {
-      transform: scale(1);
-    }
-    50% {
-      transform: scale(1.05);
-    }
-    100% {
-      transform: scale(1);
-    }
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
   }
   
   .extraction-result {
     .extraction-summary {
       background-color: #d4edda;
       border: 1px solid #c3e6cb;
-      border-radius: 4px;
-      padding: 15px;
-      margin-bottom: 15px;
+      border-radius: var(--border-radius);
+      padding: var(--spacing-md);
+      margin-bottom: var(--spacing-md);
       
       p {
         margin: 5px 0;
@@ -391,10 +407,10 @@
       summary {
         cursor: pointer;
         font-weight: bold;
-        padding: 8px;
-        background-color: #f8f9fa;
+        padding: var(--spacing-sm);
+        background-color: var(--gray-light);
         border: 1px solid #e9ecef;
-        border-radius: 4px;
+        border-radius: var(--border-radius);
         margin-bottom: 10px;
         
         &:hover {
