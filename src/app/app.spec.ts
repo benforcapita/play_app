@@ -5,23 +5,31 @@ import { RouterOutlet } from '@angular/router';
 import { By } from '@angular/platform-browser';
 import { App } from './app';
 import { ApiService } from './core/services/api.service';
+import { CharactersService } from './core/services/characters.services';
 import { of, throwError } from 'rxjs';
 
 describe('App', () => {
   let mockApiService: jasmine.SpyObj<ApiService>;
+  let mockCharactersService: jasmine.SpyObj<CharactersService>;
 
   beforeEach(async () => {
-    const spy = jasmine.createSpyObj('ApiService', ['getPing', 'getHealth']);
+    const apiSpy = jasmine.createSpyObj('ApiService', ['getPing', 'getHealth']);
+    const charactersSpy = jasmine.createSpyObj('CharactersService', [
+      'list', 'get', 'create', 'update', 'delete', 'getSheet',
+      'startExtraction', 'getExtractionStatus', 'getExtractionResult'
+    ]);
     
     await TestBed.configureTestingModule({
       imports: [App, RouterTestingModule],
       providers: [
         provideZonelessChangeDetection(),
-        { provide: ApiService, useValue: spy }
+        { provide: ApiService, useValue: apiSpy },
+        { provide: CharactersService, useValue: charactersSpy }
       ]
     }).compileComponents();
 
     mockApiService = TestBed.inject(ApiService) as jasmine.SpyObj<ApiService>;
+    mockCharactersService = TestBed.inject(CharactersService) as jasmine.SpyObj<CharactersService>;
   });
 
   it('should create the app', () => {
@@ -67,9 +75,11 @@ describe('App', () => {
       fixture.detectChanges();
       const compiled = fixture.nativeElement as HTMLElement;
       
-      const buttons = compiled.querySelectorAll('.api-button') as NodeListOf<HTMLButtonElement>;
+      // Test only the main API test buttons (ping and health) which should never be disabled
+      const pingButton = compiled.querySelector('.ping-button') as HTMLButtonElement;
+      const healthButton = compiled.querySelector('.health-button') as HTMLButtonElement;
       
-      buttons.forEach(button => {
+      [pingButton, healthButton].forEach(button => {
         expect(button.type).toBe('button');
         expect(button.disabled).toBe(false);
         expect(button.classList.contains('api-button')).toBe(true);

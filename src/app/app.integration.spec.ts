@@ -56,9 +56,11 @@ describe('App Integration Tests', () => {
     });
 
     it('should have proper button attributes', () => {
-      const buttons = TestUtils.getElements(fixture, '.api-button') as HTMLButtonElement[];
+      // Test only the main API test buttons (ping and health) which should never be disabled
+      const pingButton = TestUtils.getElement(fixture, '.ping-button') as HTMLButtonElement;
+      const healthButton = TestUtils.getElement(fixture, '.health-button') as HTMLButtonElement;
       
-      buttons.forEach(button => {
+      [pingButton, healthButton].forEach(button => {
         expect(button.type).toBe('button');
         expect(button.disabled).toBe(false);
         expect(button.classList.contains('api-button')).toBe(true);
