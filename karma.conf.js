@@ -8,6 +8,7 @@ module.exports = function (config) {
     plugins: [
       require('karma-jasmine'),
       require('karma-chrome-launcher'),
+      require('karma-jsdom-launcher'),
       require('karma-jasmine-html-reporter'),
       require('karma-coverage'),
       require('@angular-devkit/build-angular/plugins/karma')
@@ -67,7 +68,5 @@ module.exports = function (config) {
     browserNoActivityTimeout: 60000,
     captureTimeout: 60000,
     reportSlowerThan: 5000
-  });
-};
   });
 }; 

@@ -125,7 +125,7 @@ describe('App', () => {
       
       const resultDisplay = fixture.nativeElement.querySelector('.result-display');
       expect(resultDisplay).toBeTruthy();
-      expect(resultDisplay.textContent).toContain('Ping Result:');
+      expect(resultDisplay.textContent).toContain('API Result:');
       expect(resultDisplay.textContent).toContain('pong');
     });
 
@@ -180,7 +180,7 @@ describe('App', () => {
       
       let resultDisplays = fixture.nativeElement.querySelectorAll('.result-display');
       expect(resultDisplays.length).toBe(1);
-      expect(resultDisplays[0].textContent).toContain('Ping Result:');
+      expect(resultDisplays[0].textContent).toContain('API Result:');
       
       // Then call health
       app.checkHealth();
