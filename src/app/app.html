@@ -20,6 +20,177 @@
       Test Health API
     </button>
   </div>
+</div>
+
+<div class="api-test-container">
+  <h2>Character API Test</h2>
+  
+  <div class="input-container">
+    <label for="characterId">Character ID:</label>
+    <input 
+      type="number" 
+      id="characterId" 
+      [value]="characterId()" 
+      (input)="updateCharacterId($event)"
+      min="1">
+      
+    <label for="sheetSection">Sheet Section:</label>
+    <select 
+      id="sheetSection" 
+      [value]="sheetSection()" 
+      (change)="updateSheetSection($event)">
+      <option value="characterinfo">Character Info</option>
+      <option value="appearance">Appearance</option>
+      <option value="abilityscores">Ability Scores</option>
+      <option value="savingthrows">Saving Throws</option>
+      <option value="skills">Skills</option>
+      <option value="combat">Combat</option>
+      <option value="proficiencies">Proficiencies</option>
+      <option value="featuresandtraits">Features and Traits</option>
+      <option value="equipment">Equipment</option>
+      <option value="spellcasting">Spellcasting</option>
+      <option value="persona">Persona</option>
+      <option value="backstory">Backstory</option>
+    </select>
+  </div>
+  
+  <div class="button-container">
+    <button 
+      type="button" 
+      class="api-button" 
+      (click)="listCharacters()">
+      List All Characters
+    </button>
+    
+    <button 
+      type="button" 
+      class="api-button" 
+      (click)="getCharacter()">
+      Get Character
+    </button>
+    
+    <button 
+      type="button" 
+      class="api-button" 
+      (click)="updateCharacter()"
+      [disabled]="!character()">
+      Update Character
+    </button>
+    
+    <button 
+      type="button" 
+      class="api-button delete-button" 
+      (click)="deleteCharacter()">
+      Delete Character
+    </button>
+    
+    <button 
+      type="button" 
+      class="api-button" 
+      (click)="getCharacterSheet()">
+      Get Character Sheet
+    </button>
+  </div>
+</div>
+
+<div class="api-test-container">
+  <h2>Character Extraction</h2>
+  
+  <div class="extraction-container">
+    <div class="file-upload-section">
+      <label for="characterFile">Upload Character Sheet (PNG, JPEG, WebP, GIF, PDF):</label>
+      <input 
+        type="file" 
+        id="characterFile" 
+        accept=".png,.jpg,.jpeg,.webp,.gif,.pdf"
+        (change)="onFileSelected($event)"
+        [disabled]="isExtracting()">
+    </div>
+    
+    <!-- Job Status Panel - Always visible when there's a job token -->
+    <div class="job-status-panel" *ngIf="extractionJobToken()">
+      <div class="job-header">
+        <h4>🔍 Extraction Job Status</h4>
+        <div class="job-token">
+          <strong>Token:</strong> <code>{{ extractionJobToken() }}</code>
+        </div>
+      </div>
+      
+      <div class="status-indicator">
+        <span *ngIf="isExtracting()" class="status-badge extracting">
+          🔄 Processing...
+        </span>
+        <span *ngIf="extractionStatus()" class="status-badge" 
+              [class]="extractionStatus()?.status">
+          {{ extractionStatus()?.status | titlecase }}
+        </span>
+        <span *ngIf="!extractionStatus() && !isExtracting()" class="status-badge unknown">
+          ❓ Unknown Status
+        </span>
+      </div>
+
+      <!-- Manual Status Check Button - Always available -->
+      <div class="status-check-controls">
+        <button 
+          type="button" 
+          class="api-button status-check-button" 
+          (click)="checkExtractionStatus()"
+          [disabled]="isExtracting()">
+          🔄 Check Status Now
+        </button>
+        <small *ngIf="extractionStatus()?.createdAt" class="last-updated">
+          Created: {{ extractionStatus()?.createdAt | date:'short' }}
+        </small>
+      </div>
+      
+      <!-- Timestamps -->
+      <div class="job-timeline" *ngIf="extractionStatus()">
+        <div class="timeline-item" *ngIf="extractionStatus()?.startedAt">
+          <strong>Started:</strong> {{ extractionStatus()?.startedAt | date:'medium' }}
+        </div>
+        <div class="timeline-item" *ngIf="extractionStatus()?.completedAt">
+          <strong>Completed:</strong> {{ extractionStatus()?.completedAt | date:'medium' }}
+        </div>
+      </div>
+      
+      <!-- Section Results -->
+      <div *ngIf="extractionStatus()?.sectionResults?.length" class="section-results">
+        <h5>📋 Section Processing Status:</h5>
+        <div class="sections-grid">
+          <div *ngFor="let section of extractionStatus()?.sectionResults" 
+               class="section-item"
+               [class]="section.isSuccessful ? 'success' : 'error'">
+            <span class="section-name">{{ section.sectionName }}</span>
+            <span class="section-status">
+              <span *ngIf="section.isSuccessful">✅</span>
+              <span *ngIf="!section.isSuccessful">❌</span>
+            </span>
+            <div *ngIf="section.errorMessage" class="section-error">
+              {{ section.errorMessage }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Extraction Actions -->
+    <div class="extraction-actions" *ngIf="extractionJobToken()">
+      <button 
+        type="button" 
+        class="api-button result-button" 
+        (click)="getExtractionResult()"
+        [disabled]="extractionStatus()?.status !== 'completed' || !extractionStatus()?.isSuccessful">
+        📥 Get Final Result
+      </button>
+      
+      <button 
+        type="button" 
+        class="api-button clear-button" 
+        (click)="clearExtractionResults()">
+        🗑️ Clear Job
+      </button>
+    </div>
+  </div>
 
   <div class="results-container">
     <!-- Error Display -->
@@ -29,7 +200,7 @@
 
     <!-- Ping Result Display -->
     <div *ngIf="result()" class="result-display">
-      <h3>Ping Result:</h3>
+      <h3>API Result:</h3>
       <pre>{{ result() | json }}</pre>
     </div>
 
@@ -37,6 +208,38 @@
     <div *ngIf="healthText()" class="result-display">
       <h3>Health Result:</h3>
       <pre>{{ healthText() }}</pre>
+    </div>
+
+    <!-- Characters List Display -->
+    <div *ngIf="characters()" class="result-display">
+      <h3>Characters List:</h3>
+      <pre>{{ characters() | json }}</pre>
+    </div>
+
+    <!-- Single Character Display -->
+    <div *ngIf="character()" class="result-display">
+      <h3>Character Details:</h3>
+      <pre>{{ character() | json }}</pre>
+    </div>
+
+    <!-- Character Sheet Display -->
+    <div *ngIf="characterSheet()" class="result-display">
+      <h3>Character Sheet ({{ sheetSection() }}):</h3>
+      <pre>{{ characterSheet() | json }}</pre>
+    </div>
+
+    <!-- Extraction Result Display -->
+    <div *ngIf="extractionResult()" class="result-display extraction-result">
+      <h3>Extraction Result:</h3>
+      <div class="extraction-summary">
+        <p><strong>Success Rate:</strong> {{ ((extractionResult()?.jobSummary?.successRate ?? 0) * 100).toFixed(1) }}%</p>
+        <p><strong>Sections Processed:</strong> {{ extractionResult()?.jobSummary?.successfulSections ?? 0 }}/{{ extractionResult()?.jobSummary?.totalSections ?? 0 }}</p>
+        <p><strong>Completed At:</strong> {{ extractionResult()?.jobSummary?.completedAt | date:'medium' }}</p>
+      </div>
+      <details>
+        <summary>View Extracted Character Data</summary>
+        <pre>{{ extractionResult()?.character | json }}</pre>
+      </details>
     </div>
   </div>
 </div>

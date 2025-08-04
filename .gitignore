@@ -73,3 +73,4 @@ api/play_app_api.tests/obj/Release/*
 api/play_app_api.tests/bin/Debug/net9.0/*
 api/play_app_api.tests/obj/Debug/net9.0/*
 api/play_app_api/appsettings*.json
+api/update-container-env.sh
