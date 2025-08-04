@@ -19,7 +19,7 @@ public class Program
     "http://localhost:4300"
 };
 var openRouterKey    = builder.Configuration["OPENROUTER_API_KEY"] ?? "";
-var openRouterModel  = builder.Configuration["OPENROUTER_MODEL"]  ?? "google/gemini-2.5-flash"; // choose per models page
+var openRouterModel  = builder.Configuration["OPENROUTER_MODEL"]  ?? "google/gemini‑2.5‑pro"; // choose per models page
 var appReferer       = builder.Configuration["APP_REFERER"]; // optional
 var appTitle         = builder.Configuration["APP_TITLE"];   // optional
 builder.Services.AddHttpClient("openrouter", client =>

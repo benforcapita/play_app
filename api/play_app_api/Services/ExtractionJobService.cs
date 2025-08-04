@@ -192,67 +192,67 @@ public class ExtractionJobService : BackgroundService
             // Define all sections to process
             var sections = new Dictionary<string, Func<JsonElement, Task<object?>>>
             {
-                ["CharacterInfo"] = async element => {
+                ["CharacterInfo"] = element => {
                     var result = JsonSerializer.Deserialize<CharacterInfo>(element.GetRawText()) ?? new();
                     sheet.CharacterInfo = result;
-                    return result;
+                    return Task.FromResult<object?>(result);
                 },
-                ["Appearance"] = async element => {
+                ["Appearance"] = element => {
                     var result = JsonSerializer.Deserialize<Appearance>(element.GetRawText()) ?? new();
                     sheet.Appearance = result;
-                    return result;
+                    return Task.FromResult<object?>(result);
                 },
-                ["AbilityScores"] = async element => {
+                ["AbilityScores"] = element => {
                     var result = JsonSerializer.Deserialize<AbilityScores>(element.GetRawText()) ?? new();
                     sheet.AbilityScores = result;
-                    return result;
+                    return Task.FromResult<object?>(result);
                 },
-                ["SavingThrows"] = async element => {
+                ["SavingThrows"] = element => {
                     var result = JsonSerializer.Deserialize<SavingThrows>(element.GetRawText()) ?? new();
                     sheet.SavingThrows = result;
-                    return result;
+                    return Task.FromResult<object?>(result);
                 },
-                ["Skills"] = async element => {
+                ["Skills"] = element => {
                     var result = JsonSerializer.Deserialize<List<Skill>>(element.GetRawText()) ?? new();
                     sheet.Skills = result;
-                    return result;
+                    return Task.FromResult<object?>(result);
                 },
-                ["Combat"] = async element => {
+                ["Combat"] = element => {
                     var result = JsonSerializer.Deserialize<Combat>(element.GetRawText()) ?? new();
                     sheet.Combat = result;
-                    return result;
+                    return Task.FromResult<object?>(result);
                 },
-                ["Proficiencies"] = async element => {
+                ["Proficiencies"] = element => {
                     var result = JsonSerializer.Deserialize<Proficiencies>(element.GetRawText()) ?? new();
                     sheet.Proficiencies = result;
-                    return result;
+                    return Task.FromResult<object?>(result);
                 },
-                ["FeaturesAndTraits"] = async element => {
+                ["FeaturesAndTraits"] = element => {
                     var result = JsonSerializer.Deserialize<List<FeatureTrait>>(element.GetRawText()) ?? new();
                     sheet.FeaturesAndTraits = result;
-                    return result;
+                    return Task.FromResult<object?>(result);
                 },
-                ["Equipment"] = async element => {
+                ["Equipment"] = element => {
                     var equipmentOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
                     equipmentOptions.Converters.Add(new ItemsConverter());
                     var result = JsonSerializer.Deserialize<Equipment>(element.GetRawText(), equipmentOptions) ?? new();
                     sheet.Equipment = result;
-                    return result;
+                    return Task.FromResult<object?>(result);
                 },
-                ["Spellcasting"] = async element => {
+                ["Spellcasting"] = element => {
                     var result = JsonSerializer.Deserialize<Spellcasting>(element.GetRawText()) ?? new();
                     sheet.Spellcasting = result;
-                    return result;
+                    return Task.FromResult<object?>(result);
                 },
-                ["Persona"] = async element => {
+                ["Persona"] = element => {
                     var result = JsonSerializer.Deserialize<Persona>(element.GetRawText()) ?? new();
                     sheet.Persona = result;
-                    return result;
+                    return Task.FromResult<object?>(result);
                 },
-                ["Backstory"] = async element => {
+                ["Backstory"] = element => {
                     var result = JsonSerializer.Deserialize<Backstory>(element.GetRawText()) ?? new();
                     sheet.Backstory = result;
-                    return result;
+                    return Task.FromResult<object?>(result);
                 }
             };
 
