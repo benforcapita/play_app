@@ -1,10 +1,15 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace play_app_api;
 
 public class Equipment
 {
+    public int Id { get; set; }
+    public int CharacterSheetId { get; set; }
+    [ForeignKey("CharacterSheetId")]
+    public CharacterSheet CharacterSheet { get; set; } = null!;
     [JsonPropertyName("items")] 
     [JsonConverter(typeof(ItemsConverter))]
     public List<Item> Items { get; set; } = new();
@@ -15,6 +20,10 @@ public class Equipment
 
 public class Item 
 { 
+    public int Id { get; set; }
+    public int EquipmentId { get; set; }
+    [ForeignKey("EquipmentId")]
+    public Equipment Equipment { get; set; } = null!;
     [JsonPropertyName("name")] public string Name { get; set; } = ""; 
     [JsonPropertyName("quantity")] public int Quantity { get; set; } = 1; 
     [JsonPropertyName("weight")] public float Weight { get; set; } 
@@ -22,6 +31,10 @@ public class Item
 
 public class Currency 
 { 
+    public int Id { get; set; }
+    public int EquipmentId { get; set; }
+    [ForeignKey("EquipmentId")]
+    public Equipment Equipment { get; set; } = null!;
     [JsonPropertyName("cp")] public int Cp { get; set; }
     [JsonPropertyName("sp")] public int Sp { get; set; }
     [JsonPropertyName("ep")] public int Ep { get; set; }
@@ -31,6 +44,10 @@ public class Currency
 
 public class CarryingCapacity 
 { 
+    public int Id { get; set; }
+    public int EquipmentId { get; set; }
+    [ForeignKey("EquipmentId")]
+    public Equipment Equipment { get; set; } = null!;
     [JsonPropertyName("weightCarried")] public float WeightCarried { get; set; }
     [JsonPropertyName("encumbered")] public float Encumbered { get; set; } 
     [JsonPropertyName("pushDragLift")] public float PushDragLift { get; set; } 

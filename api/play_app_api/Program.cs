@@ -48,9 +48,13 @@ builder.Services.AddHttpClient("openrouter", client =>
         });
 
         builder.Services.AddEndpointsApiExplorer();
-        builder.Services.AddDbContext<AppDb>(opt =>
-            opt.UseInMemoryDatabase("app"));
+        // builder.Services.AddDbContext<AppDb>(opt =>
+        //     opt.UseInMemoryDatabase("app"));
         
+        builder.Services.AddDbContext<AppDb>(opt =>
+            opt.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("DefaultConnection string is not configured")));
+
+        // Register the DbContext
         // Register background service for processing extraction jobs
         builder.Services.AddHostedService<ExtractionJobService>();
 

@@ -1,9 +1,14 @@
 using System.Text.Json.Serialization;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace play_app_api;
 
 public class Appearance
 {
+    public int Id { get; set; }
+    public int CharacterSheetId { get; set; }
+    [ForeignKey("CharacterSheetId")]
+    public CharacterSheet CharacterSheet { get; set; } = null!;
     [JsonPropertyName("size")] public string Size { get; set; } = "";
     [JsonPropertyName("gender")] public string Gender { get; set; } = "";
     [JsonPropertyName("age")] public string Age { get; set; } = "";

@@ -1,10 +1,16 @@
 using System.Text.Json.Serialization;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace play_app_api;
 
 // ---------- ROOT ----------
 public class CharacterSheet
 {
+    public int Id { get; set; }
+    public int CharacterId { get; set; }
+    [ForeignKey("CharacterId")]
+    public Character Character { get; set; } = null!;
+    
     [JsonPropertyName("characterInfo")]     public CharacterInfo CharacterInfo { get; set; } = new();
     [JsonPropertyName("appearance")]        public Appearance Appearance { get; set; } = new();
     [JsonPropertyName("abilityScores")]     public AbilityScores AbilityScores { get; set; } = new();
