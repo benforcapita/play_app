@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using play_app_api.Data;
 
 namespace play_app_api.Services;
@@ -19,13 +20,19 @@ public class ExtractionJobService : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _logger.LogInformation("ExtractionJobService started");
+        try
+        {
+            _serviceProvider.GetRequiredService<JobRuntimeMonitor>().WorkerStarted();
+        }
+        catch { }
 
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
                 await ProcessPendingJobs(stoppingToken);
-                await Task.Delay(5000, stoppingToken); // Check every 5 seconds
+                var delayMs = Math.Max(1000, (Environment.GetEnvironmentVariable("EXTRACTION_POLL_MS") is string s && int.TryParse(s, out var ms)) ? ms : 5000);
+                await Task.Delay(delayMs, stoppingToken);
             }
             catch (OperationCanceledException)
             {
@@ -35,6 +42,7 @@ public class ExtractionJobService : BackgroundService
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error in ExtractionJobService");
+                try { _serviceProvider.GetRequiredService<JobRuntimeMonitor>().RecordError(ex.Message); } catch { }
                 await Task.Delay(10000, stoppingToken); // Wait longer on error
             }
         }
@@ -44,21 +52,85 @@ public class ExtractionJobService : BackgroundService
 
     private async Task ProcessPendingJobs(CancellationToken cancellationToken)
     {
-        using var scope = _serviceProvider.CreateScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<AppDb>();
-        var httpClientFactory = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>();
-        var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
-
-        var pendingJobs = await dbContext.ExtractionJobs
-            .Where(j => j.Status == JobStatus.Pending)
-            .OrderBy(j => j.CreatedAt)
-            .Take(1) // Process one job at a time
-            .ToListAsync(cancellationToken);
-
-        foreach (var job in pendingJobs)
+        // Use a short-lived context to read the next batch of pending job IDs
+        using var readScope = _serviceProvider.CreateScope();
+        var readContext = readScope.ServiceProvider.GetRequiredService<AppDb>();
+        var configForConcurrency = readScope.ServiceProvider.GetRequiredService<IConfiguration>();
+        var concurrencyLimit = Math.Max(1, configForConcurrency.GetValue<int?>("EXTRACTION_CONCURRENCY") ?? 2);
+        int pendingCount = 0, inProgressCount = 0;
+        try
         {
-            await ProcessJob(job, dbContext, httpClientFactory, configuration, cancellationToken);
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            cts.CancelAfter(TimeSpan.FromSeconds(10));
+            pendingCount = await readContext.ExtractionJobs.CountAsync(j => j.Status == JobStatus.Pending, cts.Token);
         }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Pending count query failed (transient)");
+        }
+        try
+        {
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            cts.CancelAfter(TimeSpan.FromSeconds(10));
+            inProgressCount = await readContext.ExtractionJobs.CountAsync(j => j.Status == JobStatus.InProgress, cts.Token);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "InProgress count query failed (transient)");
+        }
+        _logger.LogInformation("Queue snapshot: pending={Pending}, inProgress={InProgress}", pendingCount, inProgressCount);
+        var runtime = readScope.ServiceProvider.GetRequiredService<JobRuntimeMonitor>();
+        runtime.UpdateHeartbeat(pendingCount, inProgressCount, concurrencyLimit);
+
+        List<int> pendingJobIds = new();
+        try
+        {
+            _logger.LogDebug("Fetching pending jobs (limit={Limit})", concurrencyLimit);
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            cts.CancelAfter(TimeSpan.FromSeconds(30)); // Increase timeout
+            pendingJobIds = await readContext.ExtractionJobs
+                .Where(j => j.Status == JobStatus.Pending)
+                .OrderBy(j => j.CreatedAt)
+                .Take(concurrencyLimit)
+                .Select(j => j.Id)
+                .ToListAsync(cts.Token);
+            _logger.LogDebug("Fetched {Count} pending job IDs", pendingJobIds.Count);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Pending job fetch failed (transient) - continuing with empty list");
+            _serviceProvider.GetRequiredService<JobRuntimeMonitor>().RecordError($"pending_fetch: {ex.Message}");
+            // Don't return - continue with empty list so worker keeps heartbeat
+        }
+
+        if (pendingJobIds.Count == 0)
+        {
+            return;
+        }
+
+        // Process each job in its own scope/context to avoid sharing DbContext across threads
+        var jobTasks = pendingJobIds.Select(async jobId =>
+        {
+            using var scope = _serviceProvider.CreateScope();
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDb>();
+            var httpClientFactory = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>();
+            var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+            var runtimeMon = scope.ServiceProvider.GetRequiredService<JobRuntimeMonitor>();
+
+            var job = await dbContext.ExtractionJobs.FirstOrDefaultAsync(j => j.Id == jobId, cancellationToken);
+            if (job != null)
+            {
+                _logger.LogInformation("Picked job {JobToken} (contentType={ContentType}) for processing", job.JobToken, job.ContentType);
+                runtimeMon.MarkPicked(job.JobToken, job.ContentType);
+                await ProcessJob(job, dbContext, httpClientFactory, configuration, cancellationToken);
+            }
+            else
+            {
+                _logger.LogDebug("Job {JobId} not found (may have been processed)", jobId);
+            }
+        });
+
+        await Task.WhenAll(jobTasks);
     }
 
     private async Task ProcessJob(ExtractionJob job, AppDb dbContext, IHttpClientFactory httpClientFactory, IConfiguration configuration, CancellationToken cancellationToken)
@@ -73,7 +145,11 @@ public class ExtractionJobService : BackgroundService
         try
         {
             var modelName = configuration["OPENROUTER_MODEL"] ?? "google/gemini-2.5-flash";
+            _logger.LogInformation("Job {JobToken} state=InProgress at {StartedAt}", job.JobToken, job.StartedAt);
+            var runtimeMon2 = _serviceProvider.GetRequiredService<JobRuntimeMonitor>();
+            runtimeMon2.StartSubtask(job.JobToken, "ai_call");
             var character = await ExtractCharacterFromFile(job, httpClientFactory, modelName, dbContext, cancellationToken);
+            runtimeMon2.CompleteSubtask(job.JobToken, "ai_call", character != null);
 
             if (character != null)
             {
@@ -82,6 +158,7 @@ public class ExtractionJobService : BackgroundService
                 job.CompletedAt = DateTime.UtcNow;
 
                 _logger.LogInformation("Job {JobToken} completed successfully", job.JobToken);
+                _serviceProvider.GetRequiredService<JobRuntimeMonitor>().MarkCompleted(job.JobToken, true);
             }
             else
             {
@@ -90,6 +167,7 @@ public class ExtractionJobService : BackgroundService
                 job.CompletedAt = DateTime.UtcNow;
 
                 _logger.LogWarning("Job {JobToken} failed - no character extracted", job.JobToken);
+                _serviceProvider.GetRequiredService<JobRuntimeMonitor>().MarkCompleted(job.JobToken, false);
             }
         }
         catch (Exception ex)
@@ -98,10 +176,24 @@ public class ExtractionJobService : BackgroundService
             job.ErrorMessage = ex.Message;
             job.CompletedAt = DateTime.UtcNow;
 
-            _logger.LogError(ex, "Job {JobToken} failed with exception", job.JobToken);
+            _logger.LogError(ex, "Job {JobToken} failed with exception: {ErrorMessage}", job.JobToken, ex.Message);
+            var monitor = _serviceProvider.GetRequiredService<JobRuntimeMonitor>();
+            monitor.MarkCompleted(job.JobToken, false);
+            // Mark any running subtasks as failed
+            monitor.MarkSubtaskError(job.JobToken, "overall_job", ex.Message);
         }
 
-        await dbContext.SaveChangesAsync(cancellationToken);
+        try
+        {
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            cts.CancelAfter(TimeSpan.FromSeconds(15)); // Quick timeout for status save
+            await dbContext.SaveChangesAsync(cts.Token);
+        }
+        catch (Exception saveEx)
+        {
+            _logger.LogError(saveEx, "Failed to save final job status for {JobToken}", job.JobToken);
+        }
+        _logger.LogInformation("Job {JobToken} state={State} completedAt={CompletedAt}", job.JobToken, job.Status, job.CompletedAt);
     }
 
     private async Task<Character?> ExtractCharacterFromFile(ExtractionJob job, IHttpClientFactory httpClientFactory, string modelName, AppDb dbContext, CancellationToken cancellationToken)
@@ -145,7 +237,14 @@ public class ExtractionJobService : BackgroundService
             _logger.LogDebug("Request to OpenRouter: {RequestBody}", requestBody);
 
             using var content = new StringContent(requestBody, Encoding.UTF8, "application/json");
+            var start = DateTime.UtcNow;
+            var runtimeMon = _serviceProvider.GetRequiredService<JobRuntimeMonitor>();
+            _logger.LogInformation("OpenRouter request started for job {JobToken} using model {Model}", job.JobToken, modelName);
+            runtimeMon.MarkOpenRouterStart(job.JobToken);
             var resp = await http.PostAsync("chat/completions", content, cancellationToken);
+            var elapsed = DateTime.UtcNow - start;
+            _logger.LogInformation("OpenRouter request finished for job {JobToken} in {ElapsedMs} ms (status {StatusCode})", job.JobToken, (int)elapsed.TotalMilliseconds, (int)resp.StatusCode);
+            runtimeMon.MarkOpenRouterFinish(job.JobToken, (long)elapsed.TotalMilliseconds, (int)resp.StatusCode);
 
             var text = await resp.Content.ReadAsStringAsync(cancellationToken);
             _logger.LogDebug("Raw OpenRouter Response: {ResponseText}", text);
@@ -171,7 +270,10 @@ public class ExtractionJobService : BackgroundService
                 return null;
             }
 
+            var monitor = _serviceProvider.GetRequiredService<JobRuntimeMonitor>();
+            monitor.StartSubtask(job.JobToken, "parse_sections");
             var sheet = await ProcessCharacterSheetWithTracking(contentStr, job, dbContext, cancellationToken);
+            monitor.CompleteSubtask(job.JobToken, "parse_sections", sheet != null);
             if (sheet == null)
             {
                 _logger.LogError("Failed to process character sheet for job {JobId}", job.Id);
@@ -186,15 +288,33 @@ public class ExtractionJobService : BackgroundService
             };
 
             // Save the Character first (without the Sheet relationship)
-            dbContext.Characters.Add(character);
-            await dbContext.SaveChangesAsync(cancellationToken);
+            monitor.StartSubtask(job.JobToken, "persist_character");
+            
+            try
+            {
+                dbContext.Characters.Add(character);
+                using var cts1 = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                cts1.CancelAfter(TimeSpan.FromSeconds(45));
+                await dbContext.SaveChangesAsync(cts1.Token);
 
-            // Now set the CharacterId on the CharacterSheet and save it
-            sheet.CharacterId = character.Id;
-            sheet.Character = character;
-            character.Sheet = sheet;
-            dbContext.CharacterSheets.Add(sheet);
-            await dbContext.SaveChangesAsync(cancellationToken);
+                // Now set the CharacterId on the CharacterSheet and save it
+                sheet.CharacterId = character.Id;
+                sheet.Character = character;
+                character.Sheet = sheet;
+                dbContext.CharacterSheets.Add(sheet);
+                
+                using var cts2 = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                cts2.CancelAfter(TimeSpan.FromSeconds(45));
+                await dbContext.SaveChangesAsync(cts2.Token);
+                
+                monitor.CompleteSubtask(job.JobToken, "persist_character", true);
+            }
+            catch (Exception saveEx)
+            {
+                _logger.LogError(saveEx, "Database save failed for job {JobToken}", job.JobToken);
+                monitor.MarkSubtaskError(job.JobToken, "persist_character", saveEx.Message);
+                throw; // Re-throw to fail the job
+            }
 
             _logger.LogInformation("Character {CharacterName} extracted and saved with ID {CharacterId}", character.Name, character.Id);
             return character;

@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using play_app_api.Data;
+using play_app_api.Services;
 
 namespace play_app_api;
 
@@ -12,7 +13,7 @@ public static class ExtractionEndpoints
     public static void MapExtractionEndpoints(this IEndpointRouteBuilder app, string modelName)
     {
         // Start an extraction job and return a token
-        app.MapPost("/api/extract/characters", async (HttpRequest req, AppDb db, ILogger<Program> logger) =>
+        app.MapPost("/api/extract/characters", async (HttpRequest req, AppDb db, JobRuntimeMonitor monitor, ILogger<Program> logger) =>
         {
             logger.LogInformation("Extraction request received at {Timestamp}", DateTime.UtcNow);
             logger.LogInformation("Request method: {Method}, Content-Type: {ContentType}", req.Method, req.ContentType);
@@ -81,6 +82,9 @@ public static class ExtractionEndpoints
 
                 logger.LogInformation("Extraction job created successfully. JobToken: {JobToken}, JobId: {JobId}", jobToken, job.Id);
 
+                // Track queued state in runtime monitor (with content type)
+                monitor.MarkQueued(jobToken, job.ContentType);
+
                 var response = new { jobToken, message = "Extraction job started. Use the job token to check status." };
                 logger.LogInformation("Returning successful response: {Response}", JsonSerializer.Serialize(response));
                 
@@ -126,6 +130,20 @@ public static class ExtractionEndpoints
 
                 logger.LogInformation("Job found. Status: {Status}, CreatedAt: {CreatedAt}", job.Status, job.CreatedAt);
 
+                // Compute queue position if pending or in-progress
+                int? queuePosition = null;
+                if (job.Status == JobStatus.Pending)
+                {
+                    queuePosition = await db.ExtractionJobs
+                        .Where(j => j.Status == JobStatus.Pending && j.CreatedAt < job.CreatedAt)
+                        .CountAsync();
+                }
+                else if (job.Status == JobStatus.InProgress)
+                {
+                    // 0 means currently being processed
+                    queuePosition = 0;
+                }
+
                 var response = new
                 {
                     jobToken = job.JobToken,
@@ -135,6 +153,7 @@ public static class ExtractionEndpoints
                     completedAt = job.CompletedAt,
                     isSuccessful = job.IsSuccessful,
                     errorMessage = job.ErrorMessage,
+                    queuePosition,
                     sectionResults = job.SectionResults.Select(s => new
                     {
                         sectionName = s.SectionName,
@@ -227,6 +246,48 @@ public static class ExtractionEndpoints
                 {
                     return Results.Problem("Internal server error during result retrieval");
                 }
+            }
+        });
+
+        // Queue overview (debug)
+        app.MapGet("/api/extract/queue", (JobRuntimeMonitor monitor, ILogger<Program> logger) =>
+        {
+            var snapshot = monitor.Snapshot();
+            return Results.Ok(snapshot);
+        });
+
+        // Clear queue (dangerous). By default clears only pending and in-progress.
+        // Pass ?all=true to delete all jobs regardless of status.
+        app.MapDelete("/api/extract/queue", async (bool? all, AppDb db, JobRuntimeMonitor monitor, ILogger<Program> logger) =>
+        {
+            try
+            {
+                var deleteAll = all == true;
+                var query = db.ExtractionJobs.AsQueryable();
+                if (!deleteAll)
+                {
+                    query = query.Where(j => j.Status == JobStatus.Pending || j.Status == JobStatus.InProgress);
+                }
+
+                var jobs = await query.ToListAsync();
+                var count = jobs.Count;
+                if (count == 0)
+                {
+                    return Results.Ok(new { deleted = 0 });
+                }
+
+                db.ExtractionJobs.RemoveRange(jobs);
+                await db.SaveChangesAsync();
+
+                logger.LogWarning("Deleted {Count} job(s) from queue (all={All})", count, deleteAll);
+                // Also clear runtime mirrors
+                monitor.ClearRuntime();
+                return Results.Ok(new { deleted = count, all = deleteAll });
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error clearing queue");
+                return Results.Problem("Failed to clear queue");
             }
         });
     }

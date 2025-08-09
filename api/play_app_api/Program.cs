@@ -23,22 +23,24 @@ var openRouterKey    = builder.Configuration["OPENROUTER_API_KEY"] ?? "";
 var openRouterModel  = builder.Configuration["OPENROUTER_MODEL"]  ?? "google/gemini‑2.5‑pro"; // choose per models page
 var appReferer       = builder.Configuration["APP_REFERER"]; // optional
 var appTitle         = builder.Configuration["APP_TITLE"];   // optional
-builder.Services.AddHttpClient("openrouter", client =>
-{
-    client.BaseAddress = new Uri("https://openrouter.ai/api/v1/");
-    if (!string.IsNullOrEmpty(openRouterKey))
-    {
-        client.DefaultRequestHeaders.Add("Authorization", $"Bearer {openRouterKey}");
-    }
-    if (!string.IsNullOrEmpty(appReferer))
-    {
-        client.DefaultRequestHeaders.Add("Referer", appReferer);
-    }
-    if (!string.IsNullOrEmpty(appTitle))
-    {
-        client.DefaultRequestHeaders.Add("X-Title", appTitle);
-    }
-});
+        builder.Services.AddHttpClient("openrouter", client =>
+        {
+            client.BaseAddress = new Uri("https://openrouter.ai/api/v1/");
+            // Increase timeout to accommodate OCR-heavy PDFs
+            client.Timeout = TimeSpan.FromSeconds(180);
+            if (!string.IsNullOrEmpty(openRouterKey))
+            {
+                client.DefaultRequestHeaders.Add("Authorization", $"Bearer {openRouterKey}");
+            }
+            if (!string.IsNullOrEmpty(appReferer))
+            {
+                client.DefaultRequestHeaders.Add("Referer", appReferer);
+            }
+            if (!string.IsNullOrEmpty(appTitle))
+            {
+                client.DefaultRequestHeaders.Add("X-Title", appTitle);
+            }
+        });
         builder.Services.AddCors(options =>
         {
             options.AddPolicy(SwaCors, policy =>
@@ -49,66 +51,80 @@ builder.Services.AddHttpClient("openrouter", client =>
         });
 
         builder.Services.AddEndpointsApiExplorer();
-        // builder.Services.AddDbContext<AppDb>(opt =>
-        //     opt.UseInMemoryDatabase("app"));
-        
-        // Get connection string - check environment variable first, then appsettings
-        var rawConnectionString = Environment.GetEnvironmentVariable("DATABASE_URL") ?? 
-                                 Environment.GetEnvironmentVariable("database-url") ??
-                                 builder.Configuration.GetConnectionString("DefaultConnection") ?? 
-                                 throw new InvalidOperationException("No database connection string configured");
-        
-        // Parse and fix malformed connection string if it's a URL
-        var connectionString = ParseAndFixConnectionString(rawConnectionString);
-        
-        // Log the original and parsed connection strings for debugging
-        var tempLogger2 = builder.Services.BuildServiceProvider().GetRequiredService<ILogger<Program>>();
-        tempLogger2.LogInformation("Original connection string type: {Type}", 
-            rawConnectionString.StartsWith("postgresql://") ? "URL" : "Connection String");
-        if (rawConnectionString.StartsWith("postgresql://"))
+
+        // Only register the AppDb provider if tests or host haven't already registered options
+        var appDbAlreadyRegistered = builder.Services.Any(sd => sd.ServiceType == typeof(DbContextOptions<AppDb>));
+        if (!appDbAlreadyRegistered)
         {
-            tempLogger2.LogInformation("Converting URL format to connection string format");
-            tempLogger2.LogInformation("Original URL: {Url}", rawConnectionString);
-        }
-        
-        // Log the connection string (without password for security)
-        var tempLogger = builder.Services.BuildServiceProvider().GetRequiredService<ILogger<Program>>();
-        var connectionStringForLogging = connectionString.Contains("Password=") 
-            ? connectionString.Substring(0, connectionString.IndexOf("Password=")) + "Password=***"
-            : connectionString;
-        tempLogger.LogInformation("Using connection string: {ConnectionString}", connectionStringForLogging);
-        
-        // Log which connection string was used
-        if (Environment.GetEnvironmentVariable("DATABASE_URL") != null)
-        {
-            tempLogger.LogInformation("Source: DATABASE_URL environment variable");
-        }
-        else if (Environment.GetEnvironmentVariable("database-url") != null)
-        {
-            tempLogger.LogInformation("Source: database-url environment variable");
-        }
-        else
-        {
-            tempLogger.LogInformation("Source: appsettings.json");
-        }
-        
-        // Configure database based on connection string type
-        if (connectionString.StartsWith("Data Source=") || connectionString.StartsWith("DataSource="))
-        {
-            // SQLite connection string
+            // Get connection string - check environment variable first, then appsettings
+            var rawConnectionString = Environment.GetEnvironmentVariable("DATABASE_URL") ?? 
+                                      Environment.GetEnvironmentVariable("database-url") ??
+                                      builder.Configuration.GetConnectionString("DefaultConnection") ?? 
+                                      throw new InvalidOperationException("No database connection string configured");
+            
+            // Parse and fix malformed connection string if it's a URL
+            var connectionString = ParseAndFixConnectionString(rawConnectionString);
+            
+            // Log the original and parsed connection strings for debugging
+            var tempLogger2 = builder.Services.BuildServiceProvider().GetRequiredService<ILogger<Program>>();
+            tempLogger2.LogInformation("Original connection string type: {Type}", 
+                rawConnectionString.StartsWith("postgresql://") ? "URL" : "Connection String");
+            if (rawConnectionString.StartsWith("postgresql://"))
+            {
+                tempLogger2.LogInformation("Converting URL format to connection string format");
+                tempLogger2.LogInformation("Original URL: {Url}", rawConnectionString);
+            }
+            
+            // Log the connection string (without password for security)
+            var tempLogger = builder.Services.BuildServiceProvider().GetRequiredService<ILogger<Program>>();
+            var connectionStringForLogging = connectionString.Contains("Password=") 
+                ? connectionString.Substring(0, connectionString.IndexOf("Password=")) + "Password=***"
+                : connectionString;
+            tempLogger.LogInformation("Using connection string: {ConnectionString}", connectionStringForLogging);
+            
+            // Log which connection string was used
+            if (Environment.GetEnvironmentVariable("DATABASE_URL") != null)
+            {
+                tempLogger.LogInformation("Source: DATABASE_URL environment variable");
+            }
+            else if (Environment.GetEnvironmentVariable("database-url") != null)
+            {
+                tempLogger.LogInformation("Source: database-url environment variable");
+            }
+            else
+            {
+                tempLogger.LogInformation("Source: appsettings.json");
+            }
+            
+            // Configure database based on connection string type
+            if (connectionString.StartsWith("Data Source=") || connectionString.StartsWith("DataSource="))
+            {
+                // SQLite connection string
+                builder.Services.AddDbContext<AppDb>(opt =>
+                    opt.UseSqlite(connectionString));
+            }
+            else
+            {
+            // PostgreSQL connection string with transient retry and sane timeouts
             builder.Services.AddDbContext<AppDb>(opt =>
-                opt.UseSqlite(connectionString));
-        }
-        else
-        {
-            // PostgreSQL connection string
-            builder.Services.AddDbContext<AppDb>(opt =>
-                opt.UseNpgsql(connectionString));
+                opt.UseNpgsql(connectionString, npgsql =>
+                {
+                    npgsql.EnableRetryOnFailure(maxRetryCount: 5, maxRetryDelay: TimeSpan.FromSeconds(2), errorCodesToAdd: null);
+                    npgsql.CommandTimeout(30);
+                }));
+            }
         }
 
         // Register the DbContext
         // Register background service for processing extraction jobs
         builder.Services.AddHostedService<ExtractionJobService>();
+        builder.Services.AddSingleton<JobRuntimeMonitor>();
+
+        // Elevate logging to Information by default; make Debug optional via env
+        var minLevel = Environment.GetEnvironmentVariable("LOG_LEVEL") ?? "Information";
+        builder.Logging.ClearProviders();
+        builder.Logging.AddConsole();
+        builder.Logging.SetMinimumLevel(Enum.TryParse<LogLevel>(minLevel, true, out var lv) ? lv : LogLevel.Information);
 
         var app = builder.Build();
         
@@ -127,13 +143,20 @@ builder.Services.AddHttpClient("openrouter", client =>
             logger.LogInformation("DATABASE_URL length: {Length}", databaseUrl.Length);
         }
         
-        // Test database connection
+        // Test database connection only if AppDb has been registered by this host or tests
         try
         {
             using var scope = app.Services.CreateScope();
-            var dbContext = scope.ServiceProvider.GetRequiredService<AppDb>();
-            var canConnect = await dbContext.Database.CanConnectAsync();
-            logger.LogInformation("Database connection test successful: {CanConnect}", canConnect);
+            var dbContext = scope.ServiceProvider.GetService<AppDb>();
+            if (dbContext != null)
+            {
+                var canConnect = await dbContext.Database.CanConnectAsync();
+                logger.LogInformation("Database connection test successful: {CanConnect}", canConnect);
+            }
+            else
+            {
+                logger.LogInformation("Skipping database connection test (AppDb not registered in this host)");
+            }
         }
         catch (Exception ex)
         {
