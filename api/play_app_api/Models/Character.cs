@@ -11,8 +11,7 @@ public class Character
 
     public string Species { get; set; } = "";
 
-    public int CharacterSheetId { get; set; }
-    [ForeignKey("CharacterSheetId")]
+    // Removed foreign key to CharacterSheet to avoid circular reference
     public CharacterSheet Sheet { get; set; } = new();
 
 }

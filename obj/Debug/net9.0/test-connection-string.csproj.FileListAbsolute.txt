@@ -1,0 +1,5 @@
+/Users/benblum/Projects/project/play_app/obj/Debug/net9.0/test-connection-string.GeneratedMSBuildEditorConfig.editorconfig
+/Users/benblum/Projects/project/play_app/obj/Debug/net9.0/test-connection-string.AssemblyInfoInputs.cache
+/Users/benblum/Projects/project/play_app/obj/Debug/net9.0/test-connection-string.AssemblyInfo.cs
+/Users/benblum/Projects/project/play_app/obj/Debug/net9.0/test-connection-string.csproj.CoreCompileInputs.cache
+/Users/benblum/Projects/project/play_app/obj/Debug/net9.0/test-connection-string.sourcelink.json

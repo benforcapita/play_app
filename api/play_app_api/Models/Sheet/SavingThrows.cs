@@ -7,7 +7,6 @@ public class SavingThrows
 {
     public int Id { get; set; }
     public int CharacterSheetId { get; set; }
-    [ForeignKey("CharacterSheetId")]
     public CharacterSheet CharacterSheet { get; set; } = null!;
     
     // Use distinct foreign key properties for each saving throw

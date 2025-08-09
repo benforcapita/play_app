@@ -43,25 +43,25 @@ public class AppDb : DbContext
     {
         var character = modelBuilder.Entity<Character>();
         character.HasOne(c => c.Sheet)
-                 .WithOne()
+                 .WithOne(cs => cs.Character)
                  .HasForeignKey<CharacterSheet>(cs => cs.CharacterId)
                  .OnDelete(DeleteBehavior.Cascade);
 
         var characterSheet = modelBuilder.Entity<CharacterSheet>();
         characterSheet.HasOne(cs => cs.CharacterInfo)
-                      .WithOne()
+                      .WithOne(ci => ci.CharacterSheet)
                       .HasForeignKey<CharacterInfo>(ci => ci.CharacterSheetId)
                       .OnDelete(DeleteBehavior.Cascade);
         characterSheet.HasOne(cs => cs.Appearance)
-                      .WithOne()
+                      .WithOne(a => a.CharacterSheet)
                       .HasForeignKey<Appearance>(a => a.CharacterSheetId)
                       .OnDelete(DeleteBehavior.Cascade);
         characterSheet.HasOne(cs => cs.AbilityScores)
-                      .WithOne()
+                      .WithOne(abs => abs.CharacterSheet)
                       .HasForeignKey<AbilityScores>(abs => abs.CharacterSheetId)
                       .OnDelete(DeleteBehavior.Cascade);
         characterSheet.HasOne(cs => cs.SavingThrows)
-                      .WithOne()
+                      .WithOne(st => st.CharacterSheet)
                       .HasForeignKey<SavingThrows>(st => st.CharacterSheetId)
                       .OnDelete(DeleteBehavior.Cascade);
         characterSheet.HasMany(cs => cs.Skills)
@@ -69,11 +69,11 @@ public class AppDb : DbContext
                       .HasForeignKey(s => s.CharacterSheetId)
                       .OnDelete(DeleteBehavior.Cascade);
         characterSheet.HasOne(cs => cs.Combat)
-                      .WithOne()
+                      .WithOne(c => c.CharacterSheet)
                       .HasForeignKey<Combat>(c => c.CharacterSheetId)
                       .OnDelete(DeleteBehavior.Cascade);
         characterSheet.HasOne(cs => cs.Proficiencies)
-                      .WithOne()
+                      .WithOne(p => p.CharacterSheet)
                       .HasForeignKey<Proficiencies>(p => p.CharacterSheetId)
                       .OnDelete(DeleteBehavior.Cascade);
         characterSheet.HasMany(cs => cs.FeaturesAndTraits)
@@ -81,19 +81,19 @@ public class AppDb : DbContext
                       .HasForeignKey(ft => ft.CharacterSheetId)
                       .OnDelete(DeleteBehavior.Cascade);
         characterSheet.HasOne(cs => cs.Equipment)
-                      .WithOne()
+                      .WithOne(e => e.CharacterSheet)
                       .HasForeignKey<Equipment>(e => e.CharacterSheetId)
                       .OnDelete(DeleteBehavior.Cascade);
         characterSheet.HasOne(cs => cs.Spellcasting)
-                      .WithOne()
+                      .WithOne(s => s.CharacterSheet)
                       .HasForeignKey<Spellcasting>(s => s.CharacterSheetId)
                       .OnDelete(DeleteBehavior.Cascade);
         characterSheet.HasOne(cs => cs.Persona)
-                      .WithOne()
+                      .WithOne(p => p.CharacterSheet)
                       .HasForeignKey<Persona>(p => p.CharacterSheetId)
                       .OnDelete(DeleteBehavior.Cascade);
         characterSheet.HasOne(cs => cs.Backstory)
-                      .WithOne()
+                      .WithOne(b => b.CharacterSheet)
                       .HasForeignKey<Backstory>(b => b.CharacterSheetId)
                       .OnDelete(DeleteBehavior.Cascade);
 
@@ -153,19 +153,19 @@ public class AppDb : DbContext
 
         var combat = modelBuilder.Entity<Combat>();
         combat.HasOne(c => c.HitPoints)
-              .WithOne()
+              .WithOne(hp => hp.Combat)
               .HasForeignKey<HitPoints>(hp => hp.CombatId)
               .OnDelete(DeleteBehavior.Cascade);
         combat.HasOne(c => c.HitDice)
-              .WithOne()
+              .WithOne(hd => hd.Combat)
               .HasForeignKey<HitDice>(hd => hd.CombatId)
               .OnDelete(DeleteBehavior.Cascade);
         combat.HasOne(c => c.DeathSaves)
-              .WithOne()
+              .WithOne(ds => ds.Combat)
               .HasForeignKey<DeathSaves>(ds => ds.CombatId)
               .OnDelete(DeleteBehavior.Cascade);
         combat.HasOne(c => c.PassiveScores)
-              .WithOne()
+              .WithOne(ps => ps.Combat)
               .HasForeignKey<PassiveScores>(ps => ps.CombatId)
               .OnDelete(DeleteBehavior.Cascade);
 
@@ -175,27 +175,27 @@ public class AppDb : DbContext
                  .HasForeignKey(i => i.EquipmentId)
                  .OnDelete(DeleteBehavior.Cascade);
         equipment.HasOne(e => e.Currency)
-                 .WithOne()
+                 .WithOne(c => c.Equipment)
                  .HasForeignKey<Currency>(c => c.EquipmentId)
                  .OnDelete(DeleteBehavior.Cascade);
         equipment.HasOne(e => e.CarryingCapacity)
-                 .WithOne()
+                 .WithOne(cc => cc.Equipment)
                  .HasForeignKey<CarryingCapacity>(cc => cc.EquipmentId)
                  .OnDelete(DeleteBehavior.Cascade);
 
         var spellcasting = modelBuilder.Entity<Spellcasting>();
         spellcasting.HasOne(s => s.SpellSlots)
-                    .WithMany()
-                    .HasForeignKey(s => s.SpellSlotsId)
-                    .OnDelete(DeleteBehavior.Cascade);
+            .WithMany()
+            .HasForeignKey(s => s.SpellSlotsId)
+            .OnDelete(DeleteBehavior.Cascade);
         spellcasting.HasMany(s => s.Cantrips)
-                    .WithOne(sp => sp.Spellcasting)
-                    .HasForeignKey(sp => sp.SpellcastingId)
-                    .OnDelete(DeleteBehavior.Cascade);
+            .WithOne(sp => sp.CantripSpellcasting)
+            .HasForeignKey(sp => sp.CantripSpellcastingId)
+            .OnDelete(DeleteBehavior.Cascade);
         spellcasting.HasMany(s => s.SpellsKnown)
-                    .WithOne()
-                    .HasForeignKey(sp => sp.SpellcastingId)
-                    .OnDelete(DeleteBehavior.Cascade);
+            .WithOne(sp => sp.SpellsKnownSpellcasting)
+            .HasForeignKey(sp => sp.SpellsKnownSpellcastingId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         // Configure SpellSlots relationships with distinct foreign keys
         var spellSlots = modelBuilder.Entity<SpellSlots>();

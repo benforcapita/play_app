@@ -13,8 +13,8 @@ using play_app_api.Data;
 namespace play_app_api.Migrations
 {
     [DbContext(typeof(AppDb))]
-    [Migration("20250806105941_CompleteCharacterSheetMapping")]
-    partial class CompleteCharacterSheetMapping
+    [Migration("20250807154825_InitialSupabaseSchema")]
+    partial class InitialSupabaseSchema
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -60,9 +60,6 @@ namespace play_app_api.Migrations
                     b.Property<int>("CharacterSheetId")
                         .HasColumnType("integer");
 
-                    b.Property<int>("CharacterSheetId1")
-                        .HasColumnType("integer");
-
                     b.Property<int>("CharismaId")
                         .HasColumnType("integer");
 
@@ -85,8 +82,6 @@ namespace play_app_api.Migrations
 
                     b.HasIndex("CharacterSheetId")
                         .IsUnique();
-
-                    b.HasIndex("CharacterSheetId1");
 
                     b.HasIndex("CharismaId");
 
@@ -119,9 +114,6 @@ namespace play_app_api.Migrations
                         .HasAnnotation("Relational:JsonPropertyName", "age");
 
                     b.Property<int>("CharacterSheetId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("CharacterSheetId1")
                         .HasColumnType("integer");
 
                     b.Property<string>("Eyes")
@@ -164,8 +156,6 @@ namespace play_app_api.Migrations
                     b.HasIndex("CharacterSheetId")
                         .IsUnique();
 
-                    b.HasIndex("CharacterSheetId1");
-
                     b.ToTable("Appearances");
 
                     b.HasAnnotation("Relational:JsonPropertyName", "appearance");
@@ -190,9 +180,6 @@ namespace play_app_api.Migrations
                         .HasAnnotation("Relational:JsonPropertyName", "background");
 
                     b.Property<int>("CharacterSheetId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("CharacterSheetId1")
                         .HasColumnType("integer");
 
                     b.Property<string>("Faction")
@@ -220,8 +207,6 @@ namespace play_app_api.Migrations
                     b.HasIndex("CharacterSheetId")
                         .IsUnique();
 
-                    b.HasIndex("CharacterSheetId1");
-
                     b.ToTable("Backstories");
 
                     b.HasAnnotation("Relational:JsonPropertyName", "backstory");
@@ -242,9 +227,6 @@ namespace play_app_api.Migrations
                     b.Property<int>("EquipmentId")
                         .HasColumnType("integer");
 
-                    b.Property<int>("EquipmentId1")
-                        .HasColumnType("integer");
-
                     b.Property<float>("PushDragLift")
                         .HasColumnType("real")
                         .HasAnnotation("Relational:JsonPropertyName", "pushDragLift");
@@ -258,8 +240,6 @@ namespace play_app_api.Migrations
                     b.HasIndex("EquipmentId")
                         .IsUnique();
 
-                    b.HasIndex("EquipmentId1");
-
                     b.ToTable("CarryingCapacities");
 
                     b.HasAnnotation("Relational:JsonPropertyName", "carryingCapacity");
@@ -272,9 +252,6 @@ namespace play_app_api.Migrations
                         .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("CharacterSheetId")
-                        .HasColumnType("integer");
 
                     b.Property<string>("Class")
                         .IsRequired()
@@ -311,9 +288,6 @@ namespace play_app_api.Migrations
                         .HasColumnType("text");
 
                     b.Property<int>("CharacterSheetId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("CharacterSheetId1")
                         .HasColumnType("integer");
 
                     b.Property<string>("Class")
@@ -357,8 +331,6 @@ namespace play_app_api.Migrations
                     b.HasIndex("CharacterSheetId")
                         .IsUnique();
 
-                    b.HasIndex("CharacterSheetId1");
-
                     b.ToTable("CharacterInfos");
 
                     b.HasAnnotation("Relational:JsonPropertyName", "characterInfo");
@@ -375,15 +347,10 @@ namespace play_app_api.Migrations
                     b.Property<int>("CharacterId")
                         .HasColumnType("integer");
 
-                    b.Property<int>("CharacterId1")
-                        .HasColumnType("integer");
-
                     b.HasKey("Id");
 
                     b.HasIndex("CharacterId")
                         .IsUnique();
-
-                    b.HasIndex("CharacterId1");
 
                     b.ToTable("CharacterSheets");
                 });
@@ -401,9 +368,6 @@ namespace play_app_api.Migrations
                         .HasAnnotation("Relational:JsonPropertyName", "armorClass");
 
                     b.Property<int>("CharacterSheetId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("CharacterSheetId1")
                         .HasColumnType("integer");
 
                     b.Property<int>("Initiative")
@@ -427,8 +391,6 @@ namespace play_app_api.Migrations
 
                     b.HasIndex("CharacterSheetId")
                         .IsUnique();
-
-                    b.HasIndex("CharacterSheetId1");
 
                     b.ToTable("Combats");
 
@@ -454,9 +416,6 @@ namespace play_app_api.Migrations
                     b.Property<int>("EquipmentId")
                         .HasColumnType("integer");
 
-                    b.Property<int>("EquipmentId1")
-                        .HasColumnType("integer");
-
                     b.Property<int>("Gp")
                         .HasColumnType("integer")
                         .HasAnnotation("Relational:JsonPropertyName", "gp");
@@ -474,8 +433,6 @@ namespace play_app_api.Migrations
                     b.HasIndex("EquipmentId")
                         .IsUnique();
 
-                    b.HasIndex("EquipmentId1");
-
                     b.ToTable("Currencies");
 
                     b.HasAnnotation("Relational:JsonPropertyName", "currency");
@@ -492,9 +449,6 @@ namespace play_app_api.Migrations
                     b.Property<int>("CombatId")
                         .HasColumnType("integer");
 
-                    b.Property<int>("CombatId1")
-                        .HasColumnType("integer");
-
                     b.Property<int>("Failures")
                         .HasColumnType("integer")
                         .HasAnnotation("Relational:JsonPropertyName", "failures");
@@ -507,8 +461,6 @@ namespace play_app_api.Migrations
 
                     b.HasIndex("CombatId")
                         .IsUnique();
-
-                    b.HasIndex("CombatId1");
 
                     b.ToTable("DeathSaves");
 
@@ -526,15 +478,10 @@ namespace play_app_api.Migrations
                     b.Property<int>("CharacterSheetId")
                         .HasColumnType("integer");
 
-                    b.Property<int>("CharacterSheetId1")
-                        .HasColumnType("integer");
-
                     b.HasKey("Id");
 
                     b.HasIndex("CharacterSheetId")
                         .IsUnique();
-
-                    b.HasIndex("CharacterSheetId1");
 
                     b.ToTable("Equipments");
 
@@ -649,9 +596,6 @@ namespace play_app_api.Migrations
                     b.Property<int>("CombatId")
                         .HasColumnType("integer");
 
-                    b.Property<int>("CombatId1")
-                        .HasColumnType("integer");
-
                     b.Property<string>("Current")
                         .IsRequired()
                         .HasColumnType("text")
@@ -667,8 +611,6 @@ namespace play_app_api.Migrations
                     b.HasIndex("CombatId")
                         .IsUnique();
 
-                    b.HasIndex("CombatId1");
-
                     b.ToTable("HitDices");
 
                     b.HasAnnotation("Relational:JsonPropertyName", "hitDice");
@@ -683,9 +625,6 @@ namespace play_app_api.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<int>("CombatId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("CombatId1")
                         .HasColumnType("integer");
 
                     b.Property<int>("Current")
@@ -704,8 +643,6 @@ namespace play_app_api.Migrations
 
                     b.HasIndex("CombatId")
                         .IsUnique();
-
-                    b.HasIndex("CombatId1");
 
                     b.ToTable("HitPoints");
 
@@ -756,9 +693,6 @@ namespace play_app_api.Migrations
                     b.Property<int>("CombatId")
                         .HasColumnType("integer");
 
-                    b.Property<int>("CombatId1")
-                        .HasColumnType("integer");
-
                     b.Property<int>("Insight")
                         .HasColumnType("integer")
                         .HasAnnotation("Relational:JsonPropertyName", "insight");
@@ -775,8 +709,6 @@ namespace play_app_api.Migrations
 
                     b.HasIndex("CombatId")
                         .IsUnique();
-
-                    b.HasIndex("CombatId1");
 
                     b.ToTable("PassiveScores");
 
@@ -799,9 +731,6 @@ namespace play_app_api.Migrations
                     b.Property<int>("CharacterSheetId")
                         .HasColumnType("integer");
 
-                    b.Property<int>("CharacterSheetId1")
-                        .HasColumnType("integer");
-
                     b.Property<string>("Flaws")
                         .IsRequired()
                         .HasColumnType("text")
@@ -821,8 +750,6 @@ namespace play_app_api.Migrations
 
                     b.HasIndex("CharacterSheetId")
                         .IsUnique();
-
-                    b.HasIndex("CharacterSheetId1");
 
                     b.ToTable("Personas");
 
@@ -845,9 +772,6 @@ namespace play_app_api.Migrations
                     b.Property<int>("CharacterSheetId")
                         .HasColumnType("integer");
 
-                    b.Property<int>("CharacterSheetId1")
-                        .HasColumnType("integer");
-
                     b.PrimitiveCollection<List<string>>("Languages")
                         .IsRequired()
                         .HasColumnType("text[]")
@@ -867,8 +791,6 @@ namespace play_app_api.Migrations
 
                     b.HasIndex("CharacterSheetId")
                         .IsUnique();
-
-                    b.HasIndex("CharacterSheetId1");
 
                     b.ToTable("Proficiencies");
 
@@ -905,9 +827,6 @@ namespace play_app_api.Migrations
                     b.Property<int>("CharacterSheetId")
                         .HasColumnType("integer");
 
-                    b.Property<int>("CharacterSheetId1")
-                        .HasColumnType("integer");
-
                     b.Property<int>("CharismaSaveId")
                         .HasColumnType("integer");
 
@@ -930,8 +849,6 @@ namespace play_app_api.Migrations
 
                     b.HasIndex("CharacterSheetId")
                         .IsUnique();
-
-                    b.HasIndex("CharacterSheetId1");
 
                     b.HasIndex("CharismaSaveId");
 
@@ -1057,6 +974,9 @@ namespace play_app_api.Migrations
                     b.Property<int>("AttackId")
                         .HasColumnType("integer");
 
+                    b.Property<int?>("CantripSpellcastingId")
+                        .HasColumnType("integer");
+
                     b.Property<string>("CastingTime")
                         .IsRequired()
                         .HasColumnType("text")
@@ -1103,25 +1023,22 @@ namespace play_app_api.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int>("SpellcastingId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("SpellcastingId1")
+                    b.Property<int?>("SpellsKnownSpellcastingId")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
 
                     b.HasIndex("AttackId");
 
+                    b.HasIndex("CantripSpellcastingId");
+
                     b.HasIndex("SaveId");
 
-                    b.HasIndex("SpellcastingId");
-
-                    b.HasIndex("SpellcastingId1");
+                    b.HasIndex("SpellsKnownSpellcastingId");
 
                     b.ToTable("Spells");
 
-                    b.HasAnnotation("Relational:JsonPropertyName", "cantrips");
+                    b.HasAnnotation("Relational:JsonPropertyName", "spellsKnown");
                 });
 
             modelBuilder.Entity("play_app_api.SpellAttack", b =>
@@ -1252,9 +1169,6 @@ namespace play_app_api.Migrations
                     b.Property<int>("CharacterSheetId")
                         .HasColumnType("integer");
 
-                    b.Property<int>("CharacterSheetId1")
-                        .HasColumnType("integer");
-
                     b.Property<string>("Class")
                         .IsRequired()
                         .HasColumnType("text")
@@ -1272,8 +1186,6 @@ namespace play_app_api.Migrations
                     b.HasIndex("CharacterSheetId")
                         .IsUnique();
 
-                    b.HasIndex("CharacterSheetId1");
-
                     b.HasIndex("SpellSlotsId");
 
                     b.ToTable("Spellcastings");
@@ -1283,15 +1195,9 @@ namespace play_app_api.Migrations
 
             modelBuilder.Entity("play_app_api.AbilityScores", b =>
                 {
-                    b.HasOne("play_app_api.CharacterSheet", null)
+                    b.HasOne("play_app_api.CharacterSheet", "CharacterSheet")
                         .WithOne("AbilityScores")
                         .HasForeignKey("play_app_api.AbilityScores", "CharacterSheetId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("play_app_api.CharacterSheet", "CharacterSheet")
-                        .WithMany()
-                        .HasForeignKey("CharacterSheetId1")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -1348,15 +1254,9 @@ namespace play_app_api.Migrations
 
             modelBuilder.Entity("play_app_api.Appearance", b =>
                 {
-                    b.HasOne("play_app_api.CharacterSheet", null)
+                    b.HasOne("play_app_api.CharacterSheet", "CharacterSheet")
                         .WithOne("Appearance")
                         .HasForeignKey("play_app_api.Appearance", "CharacterSheetId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("play_app_api.CharacterSheet", "CharacterSheet")
-                        .WithMany()
-                        .HasForeignKey("CharacterSheetId1")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -1365,15 +1265,9 @@ namespace play_app_api.Migrations
 
             modelBuilder.Entity("play_app_api.Backstory", b =>
                 {
-                    b.HasOne("play_app_api.CharacterSheet", null)
+                    b.HasOne("play_app_api.CharacterSheet", "CharacterSheet")
                         .WithOne("Backstory")
                         .HasForeignKey("play_app_api.Backstory", "CharacterSheetId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("play_app_api.CharacterSheet", "CharacterSheet")
-                        .WithMany()
-                        .HasForeignKey("CharacterSheetId1")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -1382,15 +1276,9 @@ namespace play_app_api.Migrations
 
             modelBuilder.Entity("play_app_api.CarryingCapacity", b =>
                 {
-                    b.HasOne("play_app_api.Equipment", null)
+                    b.HasOne("play_app_api.Equipment", "Equipment")
                         .WithOne("CarryingCapacity")
                         .HasForeignKey("play_app_api.CarryingCapacity", "EquipmentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("play_app_api.Equipment", "Equipment")
-                        .WithMany()
-                        .HasForeignKey("EquipmentId1")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -1399,15 +1287,9 @@ namespace play_app_api.Migrations
 
             modelBuilder.Entity("play_app_api.CharacterInfo", b =>
                 {
-                    b.HasOne("play_app_api.CharacterSheet", null)
+                    b.HasOne("play_app_api.CharacterSheet", "CharacterSheet")
                         .WithOne("CharacterInfo")
                         .HasForeignKey("play_app_api.CharacterInfo", "CharacterSheetId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("play_app_api.CharacterSheet", "CharacterSheet")
-                        .WithMany()
-                        .HasForeignKey("CharacterSheetId1")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -1416,15 +1298,9 @@ namespace play_app_api.Migrations
 
             modelBuilder.Entity("play_app_api.CharacterSheet", b =>
                 {
-                    b.HasOne("play_app_api.Character", null)
+                    b.HasOne("play_app_api.Character", "Character")
                         .WithOne("Sheet")
                         .HasForeignKey("play_app_api.CharacterSheet", "CharacterId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("play_app_api.Character", "Character")
-                        .WithMany()
-                        .HasForeignKey("CharacterId1")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -1433,15 +1309,9 @@ namespace play_app_api.Migrations
 
             modelBuilder.Entity("play_app_api.Combat", b =>
                 {
-                    b.HasOne("play_app_api.CharacterSheet", null)
+                    b.HasOne("play_app_api.CharacterSheet", "CharacterSheet")
                         .WithOne("Combat")
                         .HasForeignKey("play_app_api.Combat", "CharacterSheetId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("play_app_api.CharacterSheet", "CharacterSheet")
-                        .WithMany()
-                        .HasForeignKey("CharacterSheetId1")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -1450,15 +1320,9 @@ namespace play_app_api.Migrations
 
             modelBuilder.Entity("play_app_api.Currency", b =>
                 {
-                    b.HasOne("play_app_api.Equipment", null)
+                    b.HasOne("play_app_api.Equipment", "Equipment")
                         .WithOne("Currency")
                         .HasForeignKey("play_app_api.Currency", "EquipmentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("play_app_api.Equipment", "Equipment")
-                        .WithMany()
-                        .HasForeignKey("EquipmentId1")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -1467,15 +1331,9 @@ namespace play_app_api.Migrations
 
             modelBuilder.Entity("play_app_api.DeathSaves", b =>
                 {
-                    b.HasOne("play_app_api.Combat", null)
+                    b.HasOne("play_app_api.Combat", "Combat")
                         .WithOne("DeathSaves")
                         .HasForeignKey("play_app_api.DeathSaves", "CombatId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("play_app_api.Combat", "Combat")
-                        .WithMany()
-                        .HasForeignKey("CombatId1")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -1484,15 +1342,9 @@ namespace play_app_api.Migrations
 
             modelBuilder.Entity("play_app_api.Equipment", b =>
                 {
-                    b.HasOne("play_app_api.CharacterSheet", null)
+                    b.HasOne("play_app_api.CharacterSheet", "CharacterSheet")
                         .WithOne("Equipment")
                         .HasForeignKey("play_app_api.Equipment", "CharacterSheetId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("play_app_api.CharacterSheet", "CharacterSheet")
-                        .WithMany()
-                        .HasForeignKey("CharacterSheetId1")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -1522,15 +1374,9 @@ namespace play_app_api.Migrations
 
             modelBuilder.Entity("play_app_api.HitDice", b =>
                 {
-                    b.HasOne("play_app_api.Combat", null)
+                    b.HasOne("play_app_api.Combat", "Combat")
                         .WithOne("HitDice")
                         .HasForeignKey("play_app_api.HitDice", "CombatId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("play_app_api.Combat", "Combat")
-                        .WithMany()
-                        .HasForeignKey("CombatId1")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -1539,15 +1385,9 @@ namespace play_app_api.Migrations
 
             modelBuilder.Entity("play_app_api.HitPoints", b =>
                 {
-                    b.HasOne("play_app_api.Combat", null)
+                    b.HasOne("play_app_api.Combat", "Combat")
                         .WithOne("HitPoints")
                         .HasForeignKey("play_app_api.HitPoints", "CombatId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("play_app_api.Combat", "Combat")
-                        .WithMany()
-                        .HasForeignKey("CombatId1")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -1567,15 +1407,9 @@ namespace play_app_api.Migrations
 
             modelBuilder.Entity("play_app_api.PassiveScores", b =>
                 {
-                    b.HasOne("play_app_api.Combat", null)
+                    b.HasOne("play_app_api.Combat", "Combat")
                         .WithOne("PassiveScores")
                         .HasForeignKey("play_app_api.PassiveScores", "CombatId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("play_app_api.Combat", "Combat")
-                        .WithMany()
-                        .HasForeignKey("CombatId1")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -1584,15 +1418,9 @@ namespace play_app_api.Migrations
 
             modelBuilder.Entity("play_app_api.Persona", b =>
                 {
-                    b.HasOne("play_app_api.CharacterSheet", null)
+                    b.HasOne("play_app_api.CharacterSheet", "CharacterSheet")
                         .WithOne("Persona")
                         .HasForeignKey("play_app_api.Persona", "CharacterSheetId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("play_app_api.CharacterSheet", "CharacterSheet")
-                        .WithMany()
-                        .HasForeignKey("CharacterSheetId1")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -1601,15 +1429,9 @@ namespace play_app_api.Migrations
 
             modelBuilder.Entity("play_app_api.Proficiencies", b =>
                 {
-                    b.HasOne("play_app_api.CharacterSheet", null)
+                    b.HasOne("play_app_api.CharacterSheet", "CharacterSheet")
                         .WithOne("Proficiencies")
                         .HasForeignKey("play_app_api.Proficiencies", "CharacterSheetId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("play_app_api.CharacterSheet", "CharacterSheet")
-                        .WithMany()
-                        .HasForeignKey("CharacterSheetId1")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -1618,15 +1440,9 @@ namespace play_app_api.Migrations
 
             modelBuilder.Entity("play_app_api.SavingThrows", b =>
                 {
-                    b.HasOne("play_app_api.CharacterSheet", null)
+                    b.HasOne("play_app_api.CharacterSheet", "CharacterSheet")
                         .WithOne("SavingThrows")
                         .HasForeignKey("play_app_api.SavingThrows", "CharacterSheetId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("play_app_api.CharacterSheet", "CharacterSheet")
-                        .WithMany()
-                        .HasForeignKey("CharacterSheetId1")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -1711,29 +1527,29 @@ namespace play_app_api.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("play_app_api.Spellcasting", "CantripSpellcasting")
+                        .WithMany("Cantrips")
+                        .HasForeignKey("CantripSpellcastingId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
                     b.HasOne("play_app_api.SpellSave", "Save")
                         .WithMany()
                         .HasForeignKey("SaveId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("play_app_api.Spellcasting", null)
+                    b.HasOne("play_app_api.Spellcasting", "SpellsKnownSpellcasting")
                         .WithMany("SpellsKnown")
-                        .HasForeignKey("SpellcastingId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("play_app_api.Spellcasting", "Spellcasting")
-                        .WithMany("Cantrips")
-                        .HasForeignKey("SpellcastingId1")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("SpellsKnownSpellcastingId")
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.Navigation("Attack");
 
+                    b.Navigation("CantripSpellcasting");
+
                     b.Navigation("Save");
 
-                    b.Navigation("Spellcasting");
+                    b.Navigation("SpellsKnownSpellcasting");
                 });
 
             modelBuilder.Entity("play_app_api.SpellSlots", b =>
@@ -1813,15 +1629,9 @@ namespace play_app_api.Migrations
 
             modelBuilder.Entity("play_app_api.Spellcasting", b =>
                 {
-                    b.HasOne("play_app_api.CharacterSheet", null)
+                    b.HasOne("play_app_api.CharacterSheet", "CharacterSheet")
                         .WithOne("Spellcasting")
                         .HasForeignKey("play_app_api.Spellcasting", "CharacterSheetId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("play_app_api.CharacterSheet", "CharacterSheet")
-                        .WithMany()
-                        .HasForeignKey("CharacterSheetId1")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

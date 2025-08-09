@@ -7,7 +7,6 @@ public class Backstory
 {
     public int Id { get; set; }
     public int CharacterSheetId { get; set; }
-    [ForeignKey("CharacterSheetId")]
     public CharacterSheet CharacterSheet { get; set; } = null!;
     [JsonPropertyName("background")] public string Background { get; set; } = "";
     [JsonPropertyName("faction")] public string Faction { get; set; } = "";

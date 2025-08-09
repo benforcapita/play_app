@@ -7,7 +7,6 @@ public class Spellcasting
 {
     public int Id { get; set; }
     public int CharacterSheetId { get; set; }
-    [ForeignKey("CharacterSheetId")]
     public CharacterSheet CharacterSheet { get; set; } = null!;
     [JsonPropertyName("class")] public string Class { get; set; } = "";
     [JsonPropertyName("ability")] public string Ability { get; set; } = "";
@@ -84,9 +83,14 @@ public class Slot
 public class Spell
 {
     public int Id { get; set; }
-    public int SpellcastingId { get; set; }
-    [ForeignKey("SpellcastingId")]
-    public Spellcasting Spellcasting { get; set; } = null!;
+    
+    // Separate foreign keys for cantrips and spells known
+    public int? CantripSpellcastingId { get; set; }
+    public int? SpellsKnownSpellcastingId { get; set; }
+    
+    // Navigation properties
+    public Spellcasting? CantripSpellcasting { get; set; }
+    public Spellcasting? SpellsKnownSpellcasting { get; set; }
     
     // Add a property to distinguish between cantrips and spells known
     public string SpellType { get; set; } = ""; // "cantrip" or "spell"

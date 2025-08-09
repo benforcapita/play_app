@@ -77,10 +77,6 @@ public class ExtractionJobService : BackgroundService
 
             if (character != null)
             {
-                // Save the character
-                dbContext.Characters.Add(character);
-                await dbContext.SaveChangesAsync(cancellationToken);
-
                 job.ResultCharacterId = character.Id;
                 job.Status = JobStatus.Completed;
                 job.CompletedAt = DateTime.UtcNow;
@@ -110,73 +106,104 @@ public class ExtractionJobService : BackgroundService
 
     private async Task<Character?> ExtractCharacterFromFile(ExtractionJob job, IHttpClientFactory httpClientFactory, string modelName, AppDb dbContext, CancellationToken cancellationToken)
     {
-        // Build messages with the CORRECT shapes per OpenRouter docs
-        object userContent =
-            job.ContentType == "application/pdf"
-            ? new object[] {
-                new { type = "text", text = "Extract a D&D 5e character sheet as strict JSON." },
-                new { type = "file", file = new { filename = job.FileName, file_data = job.FileDataUrl } }
-              }
-            : new object[] {
-                new { type = "text", text = "Extract a D&D 5e character sheet as strict JSON." },
-                new { type = "image_url", image_url = new { url = job.FileDataUrl } }
-              };
-
-        var messages = new object[] {
-            new { role = "system", content = GetSystemPrompt() },
-            new { role = "user", content = userContent }
-        };
-
-        var responseFormat = new { type = "json_object" };
-
-        object? plugins = job.ContentType == "application/pdf"
-            ? new object[] { new { id = "file-parser", pdf = new { engine = "mistral-ocr" } } }
-            : null;
-
-        var body = new Dictionary<string, object?>
+        try
         {
-            ["model"] = modelName,
-            ["messages"] = messages,
-            ["response_format"] = responseFormat
-        };
-        if (plugins != null) body["plugins"] = plugins;
+            // Build messages with the CORRECT shapes per OpenRouter docs
+            object userContent =
+                job.ContentType == "application/pdf"
+                ? new object[] {
+                    new { type = "text", text = "Extract a D&D 5e character sheet as strict JSON." },
+                    new { type = "file", file = new { filename = job.FileName, file_data = job.FileDataUrl } }
+                  }
+                : new object[] {
+                    new { type = "text", text = "Extract a D&D 5e character sheet as strict JSON." },
+                    new { type = "image_url", image_url = new { url = job.FileDataUrl } }
+                  };
 
-        // Call OpenRouter
-        var http = httpClientFactory.CreateClient("openrouter");
-        var requestBody = JsonSerializer.Serialize(body);
-        _logger.LogDebug("Request to OpenRouter: {RequestBody}", requestBody);
+            var messages = new object[] {
+                new { role = "system", content = GetSystemPrompt() },
+                new { role = "user", content = userContent }
+            };
 
-        using var content = new StringContent(requestBody, Encoding.UTF8, "application/json");
-        var resp = await http.PostAsync("chat/completions", content, cancellationToken);
+            var responseFormat = new { type = "json_object" };
 
-        var text = await resp.Content.ReadAsStringAsync(cancellationToken);
-        _logger.LogDebug("Raw OpenRouter Response: {ResponseText}", text);
+            object? plugins = job.ContentType == "application/pdf"
+                ? new object[] { new { id = "file-parser", pdf = new { engine = "mistral-ocr" } } }
+                : null;
 
-        if (!resp.IsSuccessStatusCode)
-        {
-            throw new InvalidOperationException($"OpenRouter error {(int)resp.StatusCode}: {text}");
+            var body = new Dictionary<string, object?>
+            {
+                ["model"] = modelName,
+                ["messages"] = messages,
+                ["response_format"] = responseFormat
+            };
+            if (plugins != null) body["plugins"] = plugins;
+
+            // Call OpenRouter
+            var http = httpClientFactory.CreateClient("openrouter");
+            var requestBody = JsonSerializer.Serialize(body);
+            _logger.LogDebug("Request to OpenRouter: {RequestBody}", requestBody);
+
+            using var content = new StringContent(requestBody, Encoding.UTF8, "application/json");
+            var resp = await http.PostAsync("chat/completions", content, cancellationToken);
+
+            var text = await resp.Content.ReadAsStringAsync(cancellationToken);
+            _logger.LogDebug("Raw OpenRouter Response: {ResponseText}", text);
+
+            if (!resp.IsSuccessStatusCode)
+            {
+                throw new InvalidOperationException($"OpenRouter error {(int)resp.StatusCode}: {text}");
+            }
+
+            // Extract assistant message text (the JSON string)
+            using var doc = JsonDocument.Parse(text);
+            var contentStr = doc.RootElement
+                .GetProperty("choices")[0]
+                .GetProperty("message")
+                .GetProperty("content")
+                .GetString();
+
+            _logger.LogDebug("AI Response: {AIResponse}", contentStr);
+
+            if (string.IsNullOrEmpty(contentStr))
+            {
+                _logger.LogError("Failed to get character sheet content for job {JobId}", job.Id);
+                return null;
+            }
+
+            var sheet = await ProcessCharacterSheetWithTracking(contentStr, job, dbContext, cancellationToken);
+            if (sheet == null)
+            {
+                _logger.LogError("Failed to process character sheet for job {JobId}", job.Id);
+                return null;
+            }
+
+            var character = new Character
+            {
+                Name = sheet.CharacterInfo.Name,
+                Class = sheet.CharacterInfo.Class,
+                Species = sheet.CharacterInfo.Species
+            };
+
+            // Save the Character first (without the Sheet relationship)
+            dbContext.Characters.Add(character);
+            await dbContext.SaveChangesAsync(cancellationToken);
+
+            // Now set the CharacterId on the CharacterSheet and save it
+            sheet.CharacterId = character.Id;
+            sheet.Character = character;
+            character.Sheet = sheet;
+            dbContext.CharacterSheets.Add(sheet);
+            await dbContext.SaveChangesAsync(cancellationToken);
+
+            _logger.LogInformation("Character {CharacterName} extracted and saved with ID {CharacterId}", character.Name, character.Id);
+            return character;
         }
-
-        // Extract assistant message text (the JSON string)
-        using var doc = JsonDocument.Parse(text);
-        var contentStr = doc.RootElement
-            .GetProperty("choices")[0]
-            .GetProperty("message")
-            .GetProperty("content")
-            .GetString();
-
-        _logger.LogDebug("AI Response: {AIResponse}", contentStr);
-
-        // Process the response and track section results
-        var sheet = await ProcessCharacterSheetWithTracking(contentStr!, job, dbContext, cancellationToken);
-
-        if (sheet == null) return null;
-
-        var name = sheet.CharacterInfo.CharacterName ?? "Unnamed";
-        var cls = sheet.CharacterInfo.ClassAndLevel ?? "";
-        var sp = sheet.CharacterInfo.Species ?? "";
-
-        return new Character { Name = name, Class = cls, Species = sp, Sheet = sheet };
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to extract character for job {JobId}", job.Id);
+            return null;
+        }
     }
 
     private async Task<CharacterSheet?> ProcessCharacterSheetWithTracking(string contentStr, ExtractionJob job, AppDb dbContext, CancellationToken cancellationToken)
@@ -218,9 +245,113 @@ public class ExtractionJobService : BackgroundService
                     return Task.FromResult<object?>(result);
                 },
                 ["Combat"] = element => {
-                    var result = JsonSerializer.Deserialize<Combat>(element.GetRawText()) ?? new();
-                    sheet.Combat = result;
-                    return Task.FromResult<object?>(result);
+                    var combatOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                    var combat = JsonSerializer.Deserialize<Combat>(element.GetRawText(), combatOptions) ?? new();
+                    // Handle fields that might be strings instead of integers
+                    if (element.TryGetProperty("hitPoints", out var hitPointsElement))
+                    {
+                        var hp = new HitPoints();
+                        if (hitPointsElement.TryGetProperty("max", out var maxHpElement) && maxHpElement.ValueKind == JsonValueKind.Number && maxHpElement.TryGetInt32(out int maxHp))
+                        {
+                            hp.Max = maxHp;
+                        }
+                        if (hitPointsElement.TryGetProperty("current", out var currentHpElement))
+                        {
+                            if (currentHpElement.ValueKind == JsonValueKind.Number && currentHpElement.TryGetInt32(out int currentHp))
+                            {
+                                hp.Current = currentHp;
+                            }
+                            else if (currentHpElement.ValueKind == JsonValueKind.String && int.TryParse(currentHpElement.GetString(), out currentHp))
+                            {
+                                hp.Current = currentHp;
+                            }
+                        }
+                        if (hitPointsElement.TryGetProperty("temporary", out var tempHpElement))
+                        {
+                            if (tempHpElement.ValueKind == JsonValueKind.Number && tempHpElement.TryGetInt32(out int tempHp))
+                            {
+                                hp.Temporary = tempHp;
+                            }
+                            else if (tempHpElement.ValueKind == JsonValueKind.String && int.TryParse(tempHpElement.GetString(), out tempHp))
+                            {
+                                hp.Temporary = tempHp;
+                            }
+                        }
+                        combat.HitPoints = hp;
+                    }
+                    if (element.TryGetProperty("armorClass", out var acElement))
+                    {
+                        if (acElement.ValueKind == JsonValueKind.Number && acElement.TryGetInt32(out int ac))
+                        {
+                            combat.ArmorClass = ac;
+                        }
+                        else if (acElement.ValueKind == JsonValueKind.String && int.TryParse(acElement.GetString(), out ac))
+                        {
+                            combat.ArmorClass = ac;
+                        }
+                    }
+                    if (element.TryGetProperty("initiative", out var initElement))
+                    {
+                        if (initElement.ValueKind == JsonValueKind.Number && initElement.TryGetInt32(out int init))
+                        {
+                            combat.Initiative = init;
+                        }
+                        else if (initElement.ValueKind == JsonValueKind.String && int.TryParse(initElement.GetString(), out init))
+                        {
+                            combat.Initiative = init;
+                        }
+                    }
+                    if (element.TryGetProperty("proficiencyBonus", out var profElement))
+                    {
+                        if (profElement.ValueKind == JsonValueKind.Number && profElement.TryGetInt32(out int prof))
+                        {
+                            combat.ProficiencyBonus = prof;
+                        }
+                        else if (profElement.ValueKind == JsonValueKind.String && int.TryParse(profElement.GetString(), out prof))
+                        {
+                            combat.ProficiencyBonus = prof;
+                        }
+                    }
+                    if (element.TryGetProperty("passiveScores", out var passiveScoresElement))
+                    {
+                        var ps = new PassiveScores();
+                        if (passiveScoresElement.TryGetProperty("perception", out var percElement))
+                        {
+                            if (percElement.ValueKind == JsonValueKind.Number && percElement.TryGetInt32(out int perc))
+                            {
+                                ps.Perception = perc;
+                            }
+                            else if (percElement.ValueKind == JsonValueKind.String && int.TryParse(percElement.GetString(), out perc))
+                            {
+                                ps.Perception = perc;
+                            }
+                        }
+                        if (passiveScoresElement.TryGetProperty("insight", out var insightElement))
+                        {
+                            if (insightElement.ValueKind == JsonValueKind.Number && insightElement.TryGetInt32(out int insight))
+                            {
+                                ps.Insight = insight;
+                            }
+                            else if (insightElement.ValueKind == JsonValueKind.String && int.TryParse(insightElement.GetString(), out insight))
+                            {
+                                ps.Insight = insight;
+                            }
+                        }
+                        if (passiveScoresElement.TryGetProperty("investigation", out var investElement))
+                        {
+                            if (investElement.ValueKind == JsonValueKind.Number && investElement.TryGetInt32(out int invest))
+                            {
+                                ps.Investigation = invest;
+                            }
+                            else if (investElement.ValueKind == JsonValueKind.String && int.TryParse(investElement.GetString(), out invest))
+                            {
+                                ps.Investigation = invest;
+                            }
+                        }
+                        combat.PassiveScores = ps;
+                    }
+                    sheet.Combat = combat;
+                    return Task.FromResult<object?>(combat);
                 },
                 ["Proficiencies"] = element => {
                     var result = JsonSerializer.Deserialize<Proficiencies>(element.GetRawText()) ?? new();
@@ -239,11 +370,115 @@ public class ExtractionJobService : BackgroundService
                     sheet.Equipment = result;
                     return Task.FromResult<object?>(result);
                 },
-                ["Spellcasting"] = element => {
-                    var result = JsonSerializer.Deserialize<Spellcasting>(element.GetRawText()) ?? new();
-                    sheet.Spellcasting = result;
-                    return Task.FromResult<object?>(result);
-                },
+                            ["Spellcasting"] = element => {
+                var spellcasting = new Spellcasting();
+                
+                // Manually deserialize basic properties
+                if (element.TryGetProperty("class", out var classElement) && classElement.ValueKind == JsonValueKind.String)
+                {
+                    spellcasting.Class = classElement.GetString() ?? "";
+                }
+                if (element.TryGetProperty("ability", out var abilityElement) && abilityElement.ValueKind == JsonValueKind.String)
+                {
+                    spellcasting.Ability = abilityElement.GetString() ?? "";
+                }
+                if (element.TryGetProperty("saveDC", out var saveDCElement) && saveDCElement.ValueKind == JsonValueKind.Number && saveDCElement.TryGetInt32(out int saveDC))
+                {
+                    spellcasting.SaveDC = saveDC;
+                }
+                if (element.TryGetProperty("attackBonus", out var attackBonusElement) && attackBonusElement.ValueKind == JsonValueKind.Number && attackBonusElement.TryGetInt32(out int attackBonus))
+                {
+                    spellcasting.AttackBonus = attackBonus;
+                }
+                
+                // Handle spellSlots
+                if (element.TryGetProperty("spellSlots", out var spellSlotsElement))
+                {
+                    try
+                    {
+                        var spellSlots = JsonSerializer.Deserialize<SpellSlots>(spellSlotsElement.GetRawText()) ?? new();
+                        spellcasting.SpellSlots = spellSlots;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to deserialize spell slots");
+                        spellcasting.SpellSlots = new SpellSlots();
+                    }
+                }
+                
+                // Handle cantrips as lists of strings or objects
+                if (element.TryGetProperty("cantrips", out var cantripsElement) && cantripsElement.ValueKind == JsonValueKind.Array)
+                {
+                    var cantrips = new List<Spell>();
+                    foreach (var cantrip in cantripsElement.EnumerateArray())
+                    {
+                        if (cantrip.ValueKind == JsonValueKind.String)
+                        {
+                            cantrips.Add(new Spell { Name = cantrip.GetString() ?? "", SpellType = "cantrip" });
+                        }
+                        else if (cantrip.ValueKind == JsonValueKind.Object)
+                        {
+                            try
+                            {
+                                var spell = JsonSerializer.Deserialize<Spell>(cantrip.GetRawText());
+                                if (spell != null)
+                                {
+                                    spell.SpellType = "cantrip";
+                                    cantrips.Add(spell);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogWarning(ex, "Failed to deserialize cantrip object, using name only");
+                                // Fallback to just the name if object deserialization fails
+                                if (cantrip.TryGetProperty("name", out var nameElement) && nameElement.ValueKind == JsonValueKind.String)
+                                {
+                                    cantrips.Add(new Spell { Name = nameElement.GetString() ?? "", SpellType = "cantrip" });
+                                }
+                            }
+                        }
+                    }
+                    spellcasting.Cantrips = cantrips;
+                }
+                
+                // Handle spellsKnown as lists of strings or objects
+                if (element.TryGetProperty("spellsKnown", out var spellsKnownElement) && spellsKnownElement.ValueKind == JsonValueKind.Array)
+                {
+                    var spellsKnown = new List<Spell>();
+                    foreach (var spell in spellsKnownElement.EnumerateArray())
+                    {
+                        if (spell.ValueKind == JsonValueKind.String)
+                        {
+                            spellsKnown.Add(new Spell { Name = spell.GetString() ?? "", SpellType = "spell" });
+                        }
+                        else if (spell.ValueKind == JsonValueKind.Object)
+                        {
+                            try
+                            {
+                                var spellObj = JsonSerializer.Deserialize<Spell>(spell.GetRawText());
+                                if (spellObj != null)
+                                {
+                                    spellObj.SpellType = "spell";
+                                    spellsKnown.Add(spellObj);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogWarning(ex, "Failed to deserialize spell object, using name only");
+                                // Fallback to just the name if object deserialization fails
+                                if (spell.TryGetProperty("name", out var nameElement) && nameElement.ValueKind == JsonValueKind.String)
+                                {
+                                    spellsKnown.Add(new Spell { Name = nameElement.GetString() ?? "", SpellType = "spell" });
+                                }
+                            }
+                        }
+                    }
+                    spellcasting.SpellsKnown = spellsKnown;
+                }
+                
+                sheet.Spellcasting = spellcasting;
+                return Task.FromResult<object?>(spellcasting);
+            },
                 ["Persona"] = element => {
                     var result = JsonSerializer.Deserialize<Persona>(element.GetRawText()) ?? new();
                     sheet.Persona = result;

@@ -8,7 +8,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace play_app_api.Migrations
 {
     /// <inheritdoc />
-    public partial class CompleteCharacterSheetMapping : Migration
+    public partial class InitialSupabaseSchema : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -35,8 +35,7 @@ namespace play_app_api.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     Name = table.Column<string>(type: "text", nullable: false),
                     Class = table.Column<string>(type: "text", nullable: false),
-                    Species = table.Column<string>(type: "text", nullable: false),
-                    CharacterSheetId = table.Column<int>(type: "integer", nullable: false)
+                    Species = table.Column<string>(type: "text", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -104,8 +103,7 @@ namespace play_app_api.Migrations
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    CharacterId = table.Column<int>(type: "integer", nullable: false),
-                    CharacterId1 = table.Column<int>(type: "integer", nullable: false)
+                    CharacterId = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -113,12 +111,6 @@ namespace play_app_api.Migrations
                     table.ForeignKey(
                         name: "FK_CharacterSheets_Characters_CharacterId",
                         column: x => x.CharacterId,
-                        principalTable: "Characters",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_CharacterSheets_Characters_CharacterId1",
-                        column: x => x.CharacterId1,
                         principalTable: "Characters",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -234,7 +226,6 @@ namespace play_app_api.Migrations
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     CharacterSheetId = table.Column<int>(type: "integer", nullable: false),
-                    CharacterSheetId1 = table.Column<int>(type: "integer", nullable: false),
                     StrengthId = table.Column<int>(type: "integer", nullable: false),
                     DexterityId = table.Column<int>(type: "integer", nullable: false),
                     ConstitutionId = table.Column<int>(type: "integer", nullable: false),
@@ -287,12 +278,6 @@ namespace play_app_api.Migrations
                         principalTable: "CharacterSheets",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_AbilityScoresSet_CharacterSheets_CharacterSheetId1",
-                        column: x => x.CharacterSheetId1,
-                        principalTable: "CharacterSheets",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -302,7 +287,6 @@ namespace play_app_api.Migrations
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     CharacterSheetId = table.Column<int>(type: "integer", nullable: false),
-                    CharacterSheetId1 = table.Column<int>(type: "integer", nullable: false),
                     Size = table.Column<string>(type: "text", nullable: false),
                     Gender = table.Column<string>(type: "text", nullable: false),
                     Age = table.Column<string>(type: "text", nullable: false),
@@ -321,12 +305,6 @@ namespace play_app_api.Migrations
                         principalTable: "CharacterSheets",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_Appearances_CharacterSheets_CharacterSheetId1",
-                        column: x => x.CharacterSheetId1,
-                        principalTable: "CharacterSheets",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -336,7 +314,6 @@ namespace play_app_api.Migrations
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     CharacterSheetId = table.Column<int>(type: "integer", nullable: false),
-                    CharacterSheetId1 = table.Column<int>(type: "integer", nullable: false),
                     Background = table.Column<string>(type: "text", nullable: false),
                     Faction = table.Column<string>(type: "text", nullable: false),
                     Origin = table.Column<string>(type: "text", nullable: false),
@@ -353,12 +330,6 @@ namespace play_app_api.Migrations
                         principalTable: "CharacterSheets",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_Backstories_CharacterSheets_CharacterSheetId1",
-                        column: x => x.CharacterSheetId1,
-                        principalTable: "CharacterSheets",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -368,7 +339,6 @@ namespace play_app_api.Migrations
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     CharacterSheetId = table.Column<int>(type: "integer", nullable: false),
-                    CharacterSheetId1 = table.Column<int>(type: "integer", nullable: false),
                     Name = table.Column<string>(type: "text", nullable: false),
                     Class = table.Column<string>(type: "text", nullable: false),
                     Level = table.Column<int>(type: "integer", nullable: false),
@@ -389,12 +359,6 @@ namespace play_app_api.Migrations
                         principalTable: "CharacterSheets",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_CharacterInfos_CharacterSheets_CharacterSheetId1",
-                        column: x => x.CharacterSheetId1,
-                        principalTable: "CharacterSheets",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -404,7 +368,6 @@ namespace play_app_api.Migrations
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     CharacterSheetId = table.Column<int>(type: "integer", nullable: false),
-                    CharacterSheetId1 = table.Column<int>(type: "integer", nullable: false),
                     ArmorClass = table.Column<int>(type: "integer", nullable: false),
                     Initiative = table.Column<int>(type: "integer", nullable: false),
                     Speed = table.Column<string>(type: "text", nullable: false),
@@ -420,12 +383,6 @@ namespace play_app_api.Migrations
                         principalTable: "CharacterSheets",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_Combats_CharacterSheets_CharacterSheetId1",
-                        column: x => x.CharacterSheetId1,
-                        principalTable: "CharacterSheets",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -434,8 +391,7 @@ namespace play_app_api.Migrations
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    CharacterSheetId = table.Column<int>(type: "integer", nullable: false),
-                    CharacterSheetId1 = table.Column<int>(type: "integer", nullable: false)
+                    CharacterSheetId = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -443,12 +399,6 @@ namespace play_app_api.Migrations
                     table.ForeignKey(
                         name: "FK_Equipments_CharacterSheets_CharacterSheetId",
                         column: x => x.CharacterSheetId,
-                        principalTable: "CharacterSheets",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_Equipments_CharacterSheets_CharacterSheetId1",
-                        column: x => x.CharacterSheetId1,
                         principalTable: "CharacterSheets",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -485,7 +435,6 @@ namespace play_app_api.Migrations
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     CharacterSheetId = table.Column<int>(type: "integer", nullable: false),
-                    CharacterSheetId1 = table.Column<int>(type: "integer", nullable: false),
                     PersonalityTraits = table.Column<string>(type: "text", nullable: false),
                     Ideals = table.Column<string>(type: "text", nullable: false),
                     Bonds = table.Column<string>(type: "text", nullable: false),
@@ -500,12 +449,6 @@ namespace play_app_api.Migrations
                         principalTable: "CharacterSheets",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_Personas_CharacterSheets_CharacterSheetId1",
-                        column: x => x.CharacterSheetId1,
-                        principalTable: "CharacterSheets",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -515,7 +458,6 @@ namespace play_app_api.Migrations
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     CharacterSheetId = table.Column<int>(type: "integer", nullable: false),
-                    CharacterSheetId1 = table.Column<int>(type: "integer", nullable: false),
                     Armor = table.Column<List<string>>(type: "text[]", nullable: false),
                     Weapons = table.Column<List<string>>(type: "text[]", nullable: false),
                     Tools = table.Column<List<string>>(type: "text[]", nullable: false),
@@ -530,12 +472,6 @@ namespace play_app_api.Migrations
                         principalTable: "CharacterSheets",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_Proficiencies_CharacterSheets_CharacterSheetId1",
-                        column: x => x.CharacterSheetId1,
-                        principalTable: "CharacterSheets",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -545,7 +481,6 @@ namespace play_app_api.Migrations
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     CharacterSheetId = table.Column<int>(type: "integer", nullable: false),
-                    CharacterSheetId1 = table.Column<int>(type: "integer", nullable: false),
                     StrengthSaveId = table.Column<int>(type: "integer", nullable: false),
                     DexteritySaveId = table.Column<int>(type: "integer", nullable: false),
                     ConstitutionSaveId = table.Column<int>(type: "integer", nullable: false),
@@ -559,12 +494,6 @@ namespace play_app_api.Migrations
                     table.ForeignKey(
                         name: "FK_SavingThrowsSet_CharacterSheets_CharacterSheetId",
                         column: x => x.CharacterSheetId,
-                        principalTable: "CharacterSheets",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_SavingThrowsSet_CharacterSheets_CharacterSheetId1",
-                        column: x => x.CharacterSheetId1,
                         principalTable: "CharacterSheets",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -660,7 +589,6 @@ namespace play_app_api.Migrations
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     CharacterSheetId = table.Column<int>(type: "integer", nullable: false),
-                    CharacterSheetId1 = table.Column<int>(type: "integer", nullable: false),
                     Class = table.Column<string>(type: "text", nullable: false),
                     Ability = table.Column<string>(type: "text", nullable: false),
                     SaveDC = table.Column<int>(type: "integer", nullable: false),
@@ -673,12 +601,6 @@ namespace play_app_api.Migrations
                     table.ForeignKey(
                         name: "FK_Spellcastings_CharacterSheets_CharacterSheetId",
                         column: x => x.CharacterSheetId,
-                        principalTable: "CharacterSheets",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_Spellcastings_CharacterSheets_CharacterSheetId1",
-                        column: x => x.CharacterSheetId1,
                         principalTable: "CharacterSheets",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -697,7 +619,6 @@ namespace play_app_api.Migrations
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     CombatId = table.Column<int>(type: "integer", nullable: false),
-                    CombatId1 = table.Column<int>(type: "integer", nullable: false),
                     Successes = table.Column<int>(type: "integer", nullable: false),
                     Failures = table.Column<int>(type: "integer", nullable: false)
                 },
@@ -710,12 +631,6 @@ namespace play_app_api.Migrations
                         principalTable: "Combats",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_DeathSaves_Combats_CombatId1",
-                        column: x => x.CombatId1,
-                        principalTable: "Combats",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -725,7 +640,6 @@ namespace play_app_api.Migrations
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     CombatId = table.Column<int>(type: "integer", nullable: false),
-                    CombatId1 = table.Column<int>(type: "integer", nullable: false),
                     Total = table.Column<string>(type: "text", nullable: false),
                     Current = table.Column<string>(type: "text", nullable: false)
                 },
@@ -738,12 +652,6 @@ namespace play_app_api.Migrations
                         principalTable: "Combats",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_HitDices_Combats_CombatId1",
-                        column: x => x.CombatId1,
-                        principalTable: "Combats",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -753,7 +661,6 @@ namespace play_app_api.Migrations
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     CombatId = table.Column<int>(type: "integer", nullable: false),
-                    CombatId1 = table.Column<int>(type: "integer", nullable: false),
                     Max = table.Column<int>(type: "integer", nullable: false),
                     Current = table.Column<int>(type: "integer", nullable: false),
                     Temporary = table.Column<int>(type: "integer", nullable: false)
@@ -767,12 +674,6 @@ namespace play_app_api.Migrations
                         principalTable: "Combats",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_HitPoints_Combats_CombatId1",
-                        column: x => x.CombatId1,
-                        principalTable: "Combats",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -782,7 +683,6 @@ namespace play_app_api.Migrations
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     CombatId = table.Column<int>(type: "integer", nullable: false),
-                    CombatId1 = table.Column<int>(type: "integer", nullable: false),
                     Perception = table.Column<int>(type: "integer", nullable: false),
                     Insight = table.Column<int>(type: "integer", nullable: false),
                     Investigation = table.Column<int>(type: "integer", nullable: false)
@@ -796,12 +696,6 @@ namespace play_app_api.Migrations
                         principalTable: "Combats",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_PassiveScores_Combats_CombatId1",
-                        column: x => x.CombatId1,
-                        principalTable: "Combats",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -811,7 +705,6 @@ namespace play_app_api.Migrations
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     EquipmentId = table.Column<int>(type: "integer", nullable: false),
-                    EquipmentId1 = table.Column<int>(type: "integer", nullable: false),
                     WeightCarried = table.Column<float>(type: "real", nullable: false),
                     Encumbered = table.Column<float>(type: "real", nullable: false),
                     PushDragLift = table.Column<float>(type: "real", nullable: false)
@@ -825,12 +718,6 @@ namespace play_app_api.Migrations
                         principalTable: "Equipments",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_CarryingCapacities_Equipments_EquipmentId1",
-                        column: x => x.EquipmentId1,
-                        principalTable: "Equipments",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -840,7 +727,6 @@ namespace play_app_api.Migrations
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     EquipmentId = table.Column<int>(type: "integer", nullable: false),
-                    EquipmentId1 = table.Column<int>(type: "integer", nullable: false),
                     Cp = table.Column<int>(type: "integer", nullable: false),
                     Sp = table.Column<int>(type: "integer", nullable: false),
                     Ep = table.Column<int>(type: "integer", nullable: false),
@@ -853,12 +739,6 @@ namespace play_app_api.Migrations
                     table.ForeignKey(
                         name: "FK_Currencies_Equipments_EquipmentId",
                         column: x => x.EquipmentId,
-                        principalTable: "Equipments",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_Currencies_Equipments_EquipmentId1",
-                        column: x => x.EquipmentId1,
                         principalTable: "Equipments",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -892,8 +772,8 @@ namespace play_app_api.Migrations
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    SpellcastingId = table.Column<int>(type: "integer", nullable: false),
-                    SpellcastingId1 = table.Column<int>(type: "integer", nullable: false),
+                    CantripSpellcastingId = table.Column<int>(type: "integer", nullable: true),
+                    SpellsKnownSpellcastingId = table.Column<int>(type: "integer", nullable: true),
                     SpellType = table.Column<string>(type: "text", nullable: false),
                     Name = table.Column<string>(type: "text", nullable: false),
                     Level = table.Column<int>(type: "integer", nullable: false),
@@ -922,14 +802,14 @@ namespace play_app_api.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_Spells_Spellcastings_SpellcastingId",
-                        column: x => x.SpellcastingId,
+                        name: "FK_Spells_Spellcastings_CantripSpellcastingId",
+                        column: x => x.CantripSpellcastingId,
                         principalTable: "Spellcastings",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_Spells_Spellcastings_SpellcastingId1",
-                        column: x => x.SpellcastingId1,
+                        name: "FK_Spells_Spellcastings_SpellsKnownSpellcastingId",
+                        column: x => x.SpellsKnownSpellcastingId,
                         principalTable: "Spellcastings",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -940,11 +820,6 @@ namespace play_app_api.Migrations
                 table: "AbilityScoresSet",
                 column: "CharacterSheetId",
                 unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_AbilityScoresSet_CharacterSheetId1",
-                table: "AbilityScoresSet",
-                column: "CharacterSheetId1");
 
             migrationBuilder.CreateIndex(
                 name: "IX_AbilityScoresSet_CharismaId",
@@ -983,20 +858,10 @@ namespace play_app_api.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_Appearances_CharacterSheetId1",
-                table: "Appearances",
-                column: "CharacterSheetId1");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_Backstories_CharacterSheetId",
                 table: "Backstories",
                 column: "CharacterSheetId",
                 unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Backstories_CharacterSheetId1",
-                table: "Backstories",
-                column: "CharacterSheetId1");
 
             migrationBuilder.CreateIndex(
                 name: "IX_CarryingCapacities_EquipmentId",
@@ -1005,20 +870,10 @@ namespace play_app_api.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_CarryingCapacities_EquipmentId1",
-                table: "CarryingCapacities",
-                column: "EquipmentId1");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_CharacterInfos_CharacterSheetId",
                 table: "CharacterInfos",
                 column: "CharacterSheetId",
                 unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_CharacterInfos_CharacterSheetId1",
-                table: "CharacterInfos",
-                column: "CharacterSheetId1");
 
             migrationBuilder.CreateIndex(
                 name: "IX_CharacterSheets_CharacterId",
@@ -1027,20 +882,10 @@ namespace play_app_api.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_CharacterSheets_CharacterId1",
-                table: "CharacterSheets",
-                column: "CharacterId1");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_Combats_CharacterSheetId",
                 table: "Combats",
                 column: "CharacterSheetId",
                 unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Combats_CharacterSheetId1",
-                table: "Combats",
-                column: "CharacterSheetId1");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Currencies_EquipmentId",
@@ -1049,31 +894,16 @@ namespace play_app_api.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_Currencies_EquipmentId1",
-                table: "Currencies",
-                column: "EquipmentId1");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_DeathSaves_CombatId",
                 table: "DeathSaves",
                 column: "CombatId",
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_DeathSaves_CombatId1",
-                table: "DeathSaves",
-                column: "CombatId1");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_Equipments_CharacterSheetId",
                 table: "Equipments",
                 column: "CharacterSheetId",
                 unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Equipments_CharacterSheetId1",
-                table: "Equipments",
-                column: "CharacterSheetId1");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ExtractionJobs_JobToken",
@@ -1098,20 +928,10 @@ namespace play_app_api.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_HitDices_CombatId1",
-                table: "HitDices",
-                column: "CombatId1");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_HitPoints_CombatId",
                 table: "HitPoints",
                 column: "CombatId",
                 unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_HitPoints_CombatId1",
-                table: "HitPoints",
-                column: "CombatId1");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Items_EquipmentId",
@@ -1125,20 +945,10 @@ namespace play_app_api.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_PassiveScores_CombatId1",
-                table: "PassiveScores",
-                column: "CombatId1");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_Personas_CharacterSheetId",
                 table: "Personas",
                 column: "CharacterSheetId",
                 unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Personas_CharacterSheetId1",
-                table: "Personas",
-                column: "CharacterSheetId1");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Proficiencies_CharacterSheetId",
@@ -1147,20 +957,10 @@ namespace play_app_api.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_Proficiencies_CharacterSheetId1",
-                table: "Proficiencies",
-                column: "CharacterSheetId1");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_SavingThrowsSet_CharacterSheetId",
                 table: "SavingThrowsSet",
                 column: "CharacterSheetId",
                 unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_SavingThrowsSet_CharacterSheetId1",
-                table: "SavingThrowsSet",
-                column: "CharacterSheetId1");
 
             migrationBuilder.CreateIndex(
                 name: "IX_SavingThrowsSet_CharismaSaveId",
@@ -1209,11 +1009,6 @@ namespace play_app_api.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_Spellcastings_CharacterSheetId1",
-                table: "Spellcastings",
-                column: "CharacterSheetId1");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_Spellcastings_SpellSlotsId",
                 table: "Spellcastings",
                 column: "SpellSlotsId");
@@ -1224,19 +1019,19 @@ namespace play_app_api.Migrations
                 column: "AttackId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Spells_CantripSpellcastingId",
+                table: "Spells",
+                column: "CantripSpellcastingId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Spells_SaveId",
                 table: "Spells",
                 column: "SaveId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Spells_SpellcastingId",
+                name: "IX_Spells_SpellsKnownSpellcastingId",
                 table: "Spells",
-                column: "SpellcastingId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Spells_SpellcastingId1",
-                table: "Spells",
-                column: "SpellcastingId1");
+                column: "SpellsKnownSpellcastingId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_SpellSlots_Level1Id",
