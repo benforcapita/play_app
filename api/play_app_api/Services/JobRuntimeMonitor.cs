@@ -204,6 +204,32 @@ public class JobRuntimeMonitor
         }
     }
 
+    public void SyncWithDatabase(List<RuntimeJobInfo> pendingJobs, List<RuntimeJobInfo> inProgressJobs, List<RuntimeJobInfo> recentJobs)
+    {
+        // Clear current state
+        _queuedJobs.Clear();
+        _activeJobs.Clear();
+        while (_recentlyCompleted.TryDequeue(out _)) { }
+
+        // Add pending jobs
+        foreach (var job in pendingJobs)
+        {
+            _queuedJobs[job.JobToken] = job;
+        }
+
+        // Add in-progress jobs
+        foreach (var job in inProgressJobs)
+        {
+            _activeJobs[job.JobToken] = job;
+        }
+
+        // Add recent jobs
+        foreach (var job in recentJobs)
+        {
+            _recentlyCompleted.Enqueue(job);
+        }
+    }
+
     public object Snapshot()
     {
         lock (_heartbeatLock)

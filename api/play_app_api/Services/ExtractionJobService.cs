@@ -23,8 +23,13 @@ public class ExtractionJobService : BackgroundService
         try
         {
             _serviceProvider.GetRequiredService<JobRuntimeMonitor>().WorkerStarted();
+            // Sync with database state and clean up old stuck jobs
+            await SyncMonitorWithDatabaseAndCleanup(stoppingToken);
         }
-        catch { }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to sync monitor with database on startup");
+        }
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -183,16 +188,8 @@ public class ExtractionJobService : BackgroundService
             monitor.MarkSubtaskError(job.JobToken, "overall_job", ex.Message);
         }
 
-        try
-        {
-            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            cts.CancelAfter(TimeSpan.FromSeconds(15)); // Quick timeout for status save
-            await dbContext.SaveChangesAsync(cts.Token);
-        }
-        catch (Exception saveEx)
-        {
-            _logger.LogError(saveEx, "Failed to save final job status for {JobToken}", job.JobToken);
-        }
+        // Always save the job status, even if previous saves failed
+        await SaveJobStatusWithRetry(dbContext, job, cancellationToken);
         _logger.LogInformation("Job {JobToken} state={State} completedAt={CompletedAt}", job.JobToken, job.Status, job.CompletedAt);
     }
 
@@ -292,28 +289,44 @@ public class ExtractionJobService : BackgroundService
             
             try
             {
-                dbContext.Characters.Add(character);
-                using var cts1 = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                cts1.CancelAfter(TimeSpan.FromSeconds(45));
-                await dbContext.SaveChangesAsync(cts1.Token);
+                // Use a transaction to ensure atomicity
+                using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
+                
+                try
+                {
+                    dbContext.Characters.Add(character);
+                    using var cts1 = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                    cts1.CancelAfter(TimeSpan.FromSeconds(45));
+                    await dbContext.SaveChangesAsync(cts1.Token);
 
-                // Now set the CharacterId on the CharacterSheet and save it
-                sheet.CharacterId = character.Id;
-                sheet.Character = character;
-                character.Sheet = sheet;
-                dbContext.CharacterSheets.Add(sheet);
-                
-                using var cts2 = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                cts2.CancelAfter(TimeSpan.FromSeconds(45));
-                await dbContext.SaveChangesAsync(cts2.Token);
-                
-                monitor.CompleteSubtask(job.JobToken, "persist_character", true);
+                    // Now set the CharacterId on the CharacterSheet and save it
+                    sheet.CharacterId = character.Id;
+                    sheet.Character = character;
+                    character.Sheet = sheet;
+                    dbContext.CharacterSheets.Add(sheet);
+                    
+                    using var cts2 = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                    cts2.CancelAfter(TimeSpan.FromSeconds(45));
+                    await dbContext.SaveChangesAsync(cts2.Token);
+                    
+                    await transaction.CommitAsync(cancellationToken);
+                    monitor.CompleteSubtask(job.JobToken, "persist_character", true);
+                }
+                catch
+                {
+                    await transaction.RollbackAsync(cancellationToken);
+                    throw;
+                }
             }
             catch (Exception saveEx)
             {
-                _logger.LogError(saveEx, "Database save failed for job {JobToken}", job.JobToken);
+                _logger.LogError(saveEx, "Database save failed for job {JobToken}: {Error}", job.JobToken, saveEx.Message);
                 monitor.MarkSubtaskError(job.JobToken, "persist_character", saveEx.Message);
-                throw; // Re-throw to fail the job
+                
+                // Don't re-throw - let the job complete but mark as failed
+                // This prevents the job from being stuck in InProgress
+                _logger.LogWarning("Continuing job {JobToken} as failed due to persistence error", job.JobToken);
+                return null;
             }
 
             _logger.LogInformation("Character {CharacterName} extracted and saved with ID {CharacterId}", character.Name, character.Id);
@@ -772,5 +785,160 @@ Return the data in this exact JSON structure:
 }
 
 CRITICAL: Only extract the actual data that appears in the document. Do not make up or guess values. If something is not present, use empty strings or 0.";
+    }
+
+    private async Task SyncMonitorWithDatabaseAndCleanup(CancellationToken cancellationToken)
+    {
+        using var scope = _serviceProvider.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDb>();
+        var monitor = _serviceProvider.GetRequiredService<JobRuntimeMonitor>();
+
+        try
+        {
+            var oneHourAgo = DateTime.UtcNow.AddHours(-1);
+            
+            // Find jobs stuck in InProgress for more than 1 hour
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            cts.CancelAfter(TimeSpan.FromSeconds(30));
+            
+            var stuckJobs = await dbContext.ExtractionJobs
+                .Where(j => j.Status == JobStatus.InProgress && 
+                           j.StartedAt != null && 
+                           j.StartedAt < oneHourAgo)
+                .ToListAsync(cts.Token);
+
+            _logger.LogInformation("Found {Count} stuck jobs older than 1 hour", stuckJobs.Count);
+
+            // Mark stuck jobs as failed
+            foreach (var job in stuckJobs)
+            {
+                job.Status = JobStatus.Failed;
+                job.ErrorMessage = "Job timed out after 1 hour";
+                job.CompletedAt = DateTime.UtcNow;
+                _logger.LogWarning("Marking stuck job {JobToken} as failed (started at {StartedAt})", 
+                    job.JobToken, job.StartedAt);
+            }
+
+            if (stuckJobs.Count > 0)
+            {
+                await dbContext.SaveChangesAsync(cts.Token);
+            }
+
+            // Get current database state for recent jobs (last 10 completed/failed)
+            var recentJobs = await dbContext.ExtractionJobs
+                .Where(j => j.Status == JobStatus.Completed || j.Status == JobStatus.Failed)
+                .OrderByDescending(j => j.CompletedAt)
+                .Take(10)
+                .ToListAsync(cts.Token);
+
+            var pendingJobs = await dbContext.ExtractionJobs
+                .Where(j => j.Status == JobStatus.Pending)
+                .OrderBy(j => j.CreatedAt)
+                .ToListAsync(cts.Token);
+
+            var inProgressJobs = await dbContext.ExtractionJobs
+                .Where(j => j.Status == JobStatus.InProgress)
+                .ToListAsync(cts.Token);
+
+            // Convert to RuntimeJobInfo
+            var pendingRuntime = pendingJobs.Select(ConvertToRuntimeJobInfo).ToList();
+            var inProgressRuntime = inProgressJobs.Select(ConvertToRuntimeJobInfo).ToList();
+            var recentRuntime = recentJobs.Select(ConvertToRuntimeJobInfo).ToList();
+
+            // Sync the monitor
+            monitor.SyncWithDatabase(pendingRuntime, inProgressRuntime, recentRuntime);
+
+            _logger.LogInformation("Synced monitor: {Pending} pending, {InProgress} in-progress, {Recent} recent jobs", 
+                pendingRuntime.Count, inProgressRuntime.Count, recentRuntime.Count);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to sync monitor with database");
+            monitor.RecordError($"database_sync: {ex.Message}");
+        }
+    }
+
+    private static RuntimeJobInfo ConvertToRuntimeJobInfo(ExtractionJob job)
+    {
+        var state = job.Status switch
+        {
+            JobStatus.Pending => "queued",
+            JobStatus.InProgress => "in_progress", 
+            JobStatus.Completed => "completed",
+            JobStatus.Failed => "failed",
+            _ => "unknown"
+        };
+
+        return new RuntimeJobInfo
+        {
+            JobToken = job.JobToken,
+            ContentType = job.ContentType ?? "",
+            State = state,
+            StartedAt = job.StartedAt,
+            LastUpdatedAt = job.CompletedAt ?? job.StartedAt ?? job.CreatedAt,
+            LastEvent = state,
+            Subtasks = new List<SubtaskInfo>() // Database doesn't track subtasks, only runtime does
+        };
+    }
+
+    private async Task SaveJobStatusWithRetry(AppDb dbContext, ExtractionJob job, CancellationToken cancellationToken)
+    {
+        const int maxRetries = 3;
+        var delay = TimeSpan.FromSeconds(1);
+
+        for (int attempt = 1; attempt <= maxRetries; attempt++)
+        {
+            try
+            {
+                using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                cts.CancelAfter(TimeSpan.FromSeconds(15));
+
+                // Detach and re-attach the entity to avoid tracking conflicts
+                dbContext.Entry(job).State = Microsoft.EntityFrameworkCore.EntityState.Detached;
+                
+                // Reload the job from database to get the latest version
+                var dbJob = await dbContext.ExtractionJobs
+                    .FirstOrDefaultAsync(j => j.Id == job.Id, cts.Token);
+                
+                if (dbJob != null)
+                {
+                    // Update only the status fields
+                    dbJob.Status = job.Status;
+                    dbJob.ErrorMessage = job.ErrorMessage;
+                    dbJob.CompletedAt = job.CompletedAt;
+                    dbJob.ResultCharacterId = job.ResultCharacterId;
+                    
+                    await dbContext.SaveChangesAsync(cts.Token);
+                    _logger.LogInformation("Successfully saved job status for {JobToken} on attempt {Attempt}", job.JobToken, attempt);
+                    return;
+                }
+                else
+                {
+                    _logger.LogError("Could not find job {JobId} in database for status update", job.Id);
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to save job status for {JobToken} on attempt {Attempt}/{MaxRetries}: {Error}", 
+                    job.JobToken, attempt, maxRetries, ex.Message);
+                
+                if (attempt == maxRetries)
+                {
+                    _logger.LogError(ex, "CRITICAL: Failed to save job status for {JobToken} after {MaxRetries} attempts. Job may appear stuck.", 
+                        job.JobToken, maxRetries);
+                    // Record error in runtime monitor
+                    try
+                    {
+                        _serviceProvider.GetRequiredService<JobRuntimeMonitor>().RecordError($"status_save_failed: {ex.Message}");
+                    }
+                    catch { }
+                    return;
+                }
+                
+                await Task.Delay(delay, cancellationToken);
+                delay = TimeSpan.FromMilliseconds(delay.TotalMilliseconds * 2); // Exponential backoff
+            }
+        }
     }
 }
