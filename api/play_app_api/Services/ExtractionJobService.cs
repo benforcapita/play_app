@@ -277,6 +277,22 @@ public class ExtractionJobService : BackgroundService
                 return null;
             }
 
+            // Calculate missing values using D&D 5e rules
+            _logger.LogDebug("Calculating missing character sheet values for job {JobToken}", job.JobToken);
+            monitor.MarkSubtaskStart(job.JobToken, "calculate_values");
+            try
+            {
+                CharacterSheetCalculator.CalculateMissingValues(sheet);
+                monitor.MarkSubtaskFinish(job.JobToken, "calculate_values", true);
+                _logger.LogDebug("Successfully calculated missing values for job {JobToken}", job.JobToken);
+            }
+            catch (Exception calcEx)
+            {
+                _logger.LogWarning(calcEx, "Failed to calculate some values for job {JobToken}, continuing with partial data", job.JobToken);
+                monitor.MarkSubtaskError(job.JobToken, "calculate_values", calcEx.Message);
+                // Don't fail the job - continue with what we have
+            }
+
             var character = new Character
             {
                 Name = sheet.CharacterInfo.Name,
@@ -289,34 +305,39 @@ public class ExtractionJobService : BackgroundService
             
             try
             {
-                // Use a transaction to ensure atomicity
-                using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
-                
-                try
+                // Use execution strategy's built-in transaction handling for retry compatibility
+                var strategy = dbContext.Database.CreateExecutionStrategy();
+                await strategy.ExecuteAsync(async () =>
                 {
-                    dbContext.Characters.Add(character);
-                    using var cts1 = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                    cts1.CancelAfter(TimeSpan.FromSeconds(45));
-                    await dbContext.SaveChangesAsync(cts1.Token);
+                    using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
+                    
+                    try
+                    {
+                        dbContext.Characters.Add(character);
+                        using var cts1 = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                        cts1.CancelAfter(TimeSpan.FromSeconds(45));
+                        await dbContext.SaveChangesAsync(cts1.Token);
 
-                    // Now set the CharacterId on the CharacterSheet and save it
-                    sheet.CharacterId = character.Id;
-                    sheet.Character = character;
-                    character.Sheet = sheet;
-                    dbContext.CharacterSheets.Add(sheet);
-                    
-                    using var cts2 = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                    cts2.CancelAfter(TimeSpan.FromSeconds(45));
-                    await dbContext.SaveChangesAsync(cts2.Token);
-                    
-                    await transaction.CommitAsync(cancellationToken);
-                    monitor.CompleteSubtask(job.JobToken, "persist_character", true);
-                }
-                catch
-                {
-                    await transaction.RollbackAsync(cancellationToken);
-                    throw;
-                }
+                        // Now set the CharacterId on the CharacterSheet and save it
+                        sheet.CharacterId = character.Id;
+                        sheet.Character = character;
+                        character.Sheet = sheet;
+                        dbContext.CharacterSheets.Add(sheet);
+                        
+                        using var cts2 = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                        cts2.CancelAfter(TimeSpan.FromSeconds(45));
+                        await dbContext.SaveChangesAsync(cts2.Token);
+                        
+                        await transaction.CommitAsync(cancellationToken);
+                    }
+                    catch
+                    {
+                        await transaction.RollbackAsync(cancellationToken);
+                        throw;
+                    }
+                });
+                
+                monitor.CompleteSubtask(job.JobToken, "persist_character", true);
             }
             catch (Exception saveEx)
             {
@@ -378,8 +399,8 @@ public class ExtractionJobService : BackgroundService
                     return Task.FromResult<object?>(result);
                 },
                 ["Combat"] = element => {
-                    var combatOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-                    var combat = JsonSerializer.Deserialize<Combat>(element.GetRawText(), combatOptions) ?? new();
+                    var combat = new Combat(); // Start with defaults, parse manually
+                    _logger.LogDebug("Processing Combat section for job {JobToken}", job.JobToken);
                     // Handle fields that might be strings instead of integers
                     if (element.TryGetProperty("hitPoints", out var hitPointsElement))
                     {
@@ -397,6 +418,11 @@ public class ExtractionJobService : BackgroundService
                             else if (currentHpElement.ValueKind == JsonValueKind.String && int.TryParse(currentHpElement.GetString(), out currentHp))
                             {
                                 hp.Current = currentHp;
+                            }
+                            else if (currentHpElement.ValueKind == JsonValueKind.Null)
+                            {
+                                _logger.LogDebug("hitPoints.current is null, will use calculated value");
+                                // Leave as default (10), calculator will fix it
                             }
                         }
                         if (hitPointsElement.TryGetProperty("temporary", out var tempHpElement))
