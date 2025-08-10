@@ -112,6 +112,35 @@ update_container_app() {
     print_success "Container app updated successfully!"
 }
 
+# Function to ensure secrets are configured
+ensure_secrets() {
+    print_status "Ensuring secrets are configured..."
+    
+    # Check if supabase-project-id secret exists
+    if ! az containerapp secret list -n "${CONTAINER_APP_NAME}" -g "${RESOURCE_GROUP}" --query "[?name=='supabase-project-id']" --output table | grep -q "supabase-project-id"; then
+        print_status "supabase-project-id secret not found, adding it..."
+        az containerapp secret set \
+            -n "${CONTAINER_APP_NAME}" \
+            -g "${RESOURCE_GROUP}" \
+            --secrets "supabase-project-id=nypfeezdvxprauyqimit"
+        print_success "supabase-project-id secret added successfully!"
+    else
+        print_success "supabase-project-id secret already exists!"
+    fi
+    
+    # Check if supabase-project-id environment variable exists
+    if ! az containerapp show -n "${CONTAINER_APP_NAME}" -g "${RESOURCE_GROUP}" --query "properties.template.containers[0].env[?name=='supabase-project-id']" --output table | grep -q "supabase-project-id"; then
+        print_status "supabase-project-id environment variable not found, adding it..."
+        az containerapp update \
+            -n "${CONTAINER_APP_NAME}" \
+            -g "${RESOURCE_GROUP}" \
+            --set-env-vars "supabase-project-id=nypfeezdvxprauyqimit"
+        print_success "supabase-project-id environment variable added successfully!"
+    else
+        print_success "supabase-project-id environment variable already exists!"
+    fi
+}
+
 # Function to show usage
 show_usage() {
     echo "Usage: $0 [amd64|arm64]"
@@ -120,7 +149,8 @@ show_usage() {
     echo "  1. Check prerequisites (Docker, Azure CLI, GitHub token)"
     echo "  2. Build the Docker image"
     echo "  3. Push the image to GitHub Container Registry"
-    echo "  4. Update the Azure Container App"
+    echo "  4. Ensure required secrets are configured"
+    echo "  5. Update the Azure Container App"
     echo ""
     echo "Arguments:"
     echo "  amd64  - Build for AMD64 architecture (default)"
@@ -154,6 +184,9 @@ check_prerequisites
 
 # Build and push the image
 build_and_push
+
+# Ensure secrets are configured
+ensure_secrets
 
 # Update the container app
 update_container_app

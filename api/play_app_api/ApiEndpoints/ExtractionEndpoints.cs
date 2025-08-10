@@ -5,6 +5,7 @@ using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using play_app_api.Data;
 using play_app_api.Services;
+using System.Security.Claims;
 
 namespace play_app_api;
 
@@ -13,7 +14,7 @@ public static class ExtractionEndpoints
     public static void MapExtractionEndpoints(this IEndpointRouteBuilder app, string modelName)
     {
         // Start an extraction job and return a token
-        app.MapPost("/api/extract/characters", async (HttpRequest req, AppDb db, JobRuntimeMonitor monitor, ILogger<Program> logger) =>
+        app.MapPost("/api/extract/characters", async (HttpRequest req, AppDb db, JobRuntimeMonitor monitor, ILogger<Program> logger, ClaimsPrincipal user) =>
         {
             logger.LogInformation("Extraction request received at {Timestamp}", DateTime.UtcNow);
             logger.LogInformation("Request method: {Method}, Content-Type: {ContentType}", req.Method, req.ContentType);
@@ -63,6 +64,8 @@ public static class ExtractionEndpoints
 
                 logger.LogInformation("File converted to data URL. Base64 length: {Base64Length}", base64.Length);
 
+                var uid = user.FindFirstValue("uid")??user.FindFirstValue(ClaimTypes.NameIdentifier)?? throw new InvalidOperationException("User ID not found");
+                
                 // Create extraction job
                 var jobToken = Guid.NewGuid().ToString("N")[..16]; // 16-character token
                 var job = new ExtractionJob
@@ -72,7 +75,8 @@ public static class ExtractionEndpoints
                     ContentType = file.ContentType ?? "unknown",
                     FileDataUrl = dataUrl,
                     Status = JobStatus.Pending,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.UtcNow,
+                    OwnerId = uid
                 };
 
                 logger.LogInformation("Creating extraction job with token: {JobToken}", jobToken);

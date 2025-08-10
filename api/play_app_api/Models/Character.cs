@@ -10,6 +10,10 @@ public class Character
     public string Class { get; set; } = "";
 
     public string Species { get; set; } = "";
+    
+    public string OwnerId { get; set; } = "";
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     // Removed foreign key to CharacterSheet to avoid circular reference
     public CharacterSheet Sheet { get; set; } = new();

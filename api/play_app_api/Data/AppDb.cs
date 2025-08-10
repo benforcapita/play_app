@@ -192,7 +192,7 @@ public class AppDb : DbContext
             .WithOne(sp => sp.CantripSpellcasting)
             .HasForeignKey(sp => sp.CantripSpellcastingId)
             .OnDelete(DeleteBehavior.Cascade);
-        spellcasting.HasMany(s => s.SpellsKnown)
+           spellcasting.HasMany(s => s.SpellsKnown)
             .WithOne(sp => sp.SpellsKnownSpellcasting)
             .HasForeignKey(sp => sp.SpellsKnownSpellcastingId)
             .OnDelete(DeleteBehavior.Cascade);
