@@ -14,6 +14,9 @@ public static class MiddlewareConfiguration
         // Configure CORS
         app.UseCors(appConfig.CorsPolicyName);
 
+        app.UseAuthentication();
+        app.UseAuthorization();
+
         // Map health check endpoints
         app.MapGet("/ping", (ILogger<Program> logger) =>
         {
@@ -92,6 +95,7 @@ public static class MiddlewareConfiguration
         });
 
         // Map application endpoints
+        app.MapAuthEndpoints();
         app.MapCharacterEndpoints();
         app.MapExtractionEndpoints(appConfig.OpenRouterModel);
 

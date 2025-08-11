@@ -13,8 +13,10 @@ public static class ExtractionEndpoints
 {
     public static void MapExtractionEndpoints(this IEndpointRouteBuilder app, string modelName)
     {
+        var grp = app.MapGroup("/api/extract").RequireAuthorization("UserOnly");
+
         // Start an extraction job and return a token
-        app.MapPost("/api/extract/characters", async (HttpRequest req, AppDb db, JobRuntimeMonitor monitor, ILogger<Program> logger, ClaimsPrincipal user) =>
+        grp.MapPost("/characters", async (HttpRequest req, AppDb db, JobRuntimeMonitor monitor, ILogger<Program> logger, ClaimsPrincipal user) =>
         {
             logger.LogInformation("Extraction request received at {Timestamp}", DateTime.UtcNow);
             logger.LogInformation("Request method: {Method}, Content-Type: {ContentType}", req.Method, req.ContentType);
@@ -30,7 +32,7 @@ public static class ExtractionEndpoints
 
                 var form = await req.ReadFormAsync();
                 logger.LogInformation("Form data received with {FieldCount} fields", form.Count);
-                
+
                 var file = form.Files.SingleOrDefault();
                 if (file is null || file.Length == 0)
                 {
@@ -38,15 +40,15 @@ public static class ExtractionEndpoints
                     return Results.BadRequest("file required");
                 }
 
-                logger.LogInformation("File received: {FileName}, Size: {FileSize}, ContentType: {ContentType}", 
-                    file.FileName, file.Length, file.ContentType);
+                logger.LogInformation("File received: {FileName}, Size: {FileSize}, ContentType: {ContentType}",
+                   file.FileName, file.Length, file.ContentType);
 
                 // Validate file type
                 var supportedTypes = new[] { "image/png", "image/jpeg", "image/webp", "image/gif", "application/pdf" };
                 if (!supportedTypes.Contains(file.ContentType))
                 {
-                    logger.LogWarning("Unsupported file type: {ContentType}. Supported types: {SupportedTypes}", 
-                        file.ContentType, string.Join(", ", supportedTypes));
+                    logger.LogWarning("Unsupported file type: {ContentType}. Supported types: {SupportedTypes}",
+                       file.ContentType, string.Join(", ", supportedTypes));
                     return Results.BadRequest("Unsupported content type. Supported types: PNG, JPEG, WebP, GIF, PDF");
                 }
 
@@ -57,15 +59,15 @@ public static class ExtractionEndpoints
                 var dataUrl = file.ContentType switch
                 {
                     "image/png" or "image/jpeg" or "image/webp" or "image/gif"
-                        => $"data:{file.ContentType};base64,{base64}",
+                       => $"data:{file.ContentType};base64,{base64}",
                     "application/pdf" => $"data:application/pdf;base64,{base64}",
                     _ => throw new InvalidOperationException("Unsupported content type")
                 };
 
                 logger.LogInformation("File converted to data URL. Base64 length: {Base64Length}", base64.Length);
 
-                var uid = user.FindFirstValue("uid")??user.FindFirstValue(ClaimTypes.NameIdentifier)?? throw new InvalidOperationException("User ID not found");
-                
+                var uid = user.FindFirstValue("uid") ?? user.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new InvalidOperationException("User ID not found");
+
                 // Create extraction job
                 var jobToken = Guid.NewGuid().ToString("N")[..16]; // 16-character token
                 var job = new ExtractionJob
@@ -91,13 +93,13 @@ public static class ExtractionEndpoints
 
                 var response = new { jobToken, message = "Extraction job started. Use the job token to check status." };
                 logger.LogInformation("Returning successful response: {Response}", JsonSerializer.Serialize(response));
-                
+
                 return Results.Ok(response);
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, "Error processing extraction request");
-                
+
                 // Provide more specific error messages based on exception type
                 if (ex is InvalidOperationException)
                 {
@@ -114,17 +116,19 @@ public static class ExtractionEndpoints
             }
         });
 
-        // Check job status
-        app.MapGet("/api/extract/jobs/{jobToken}/status", async (string jobToken, AppDb db, ILogger<Program> logger) =>
+        grp.MapGet("/jobs/{jobToken}/status", async (string jobToken, AppDb db, ILogger<Program> logger, ClaimsPrincipal user) =>
         {
             logger.LogInformation("Status check requested for job token: {JobToken}", jobToken);
 
             try
             {
+                var uid = user.FindFirstValue("uid") ?? user.FindFirstValue(ClaimTypes.NameIdentifier)
+                          ?? throw new InvalidOperationException("User ID not found");
+
                 var job = await db.ExtractionJobs
                     .Include(j => j.SectionResults)
                     .Include(j => j.ResultCharacter)
-                    .FirstOrDefaultAsync(j => j.JobToken == jobToken);
+                    .FirstOrDefaultAsync(j => j.JobToken == jobToken && j.OwnerId == uid);
 
                 if (job == null)
                 {
@@ -139,7 +143,7 @@ public static class ExtractionEndpoints
                 if (job.Status == JobStatus.Pending)
                 {
                     queuePosition = await db.ExtractionJobs
-                        .Where(j => j.Status == JobStatus.Pending && j.CreatedAt < job.CreatedAt)
+                        .Where(j => j.OwnerId == uid && j.Status == JobStatus.Pending && j.CreatedAt < job.CreatedAt)
                         .CountAsync();
                 }
                 else if (job.Status == JobStatus.InProgress)
@@ -174,7 +178,7 @@ public static class ExtractionEndpoints
             catch (Exception ex)
             {
                 logger.LogError(ex, "Error checking job status for token: {JobToken}", jobToken);
-                
+
                 if (ex.Message.Contains("connection") || ex.Message.Contains("database"))
                 {
                     return Results.Problem("Database connection error. Please try again later.");
@@ -187,16 +191,19 @@ public static class ExtractionEndpoints
         });
 
         // Get completed job result
-        app.MapGet("/api/extract/jobs/{jobToken}/result", async (string jobToken, AppDb db, ILogger<Program> logger) =>
+        grp.MapGet("/jobs/{jobToken}/result", async (string jobToken, AppDb db, ILogger<Program> logger, ClaimsPrincipal user) =>
         {
             logger.LogInformation("Result requested for job token: {JobToken}", jobToken);
 
             try
             {
+                var uid = user.FindFirstValue("uid") ?? user.FindFirstValue(ClaimTypes.NameIdentifier)
+                          ?? throw new InvalidOperationException("User ID not found");
+
                 var job = await db.ExtractionJobs
                     .Include(j => j.ResultCharacter)
                     .Include(j => j.SectionResults)
-                    .FirstOrDefaultAsync(j => j.JobToken == jobToken);
+                    .FirstOrDefaultAsync(j => j.JobToken == jobToken && j.OwnerId == uid);
 
                 if (job == null)
                 {
@@ -241,7 +248,7 @@ public static class ExtractionEndpoints
             catch (Exception ex)
             {
                 logger.LogError(ex, "Error getting job result for token: {JobToken}", jobToken);
-                
+
                 if (ex.Message.Contains("connection") || ex.Message.Contains("database"))
                 {
                     return Results.Problem("Database connection error. Please try again later.");
@@ -254,7 +261,7 @@ public static class ExtractionEndpoints
         });
 
         // Queue overview (debug)
-        app.MapGet("/api/extract/queue", (JobRuntimeMonitor monitor, ILogger<Program> logger) =>
+        grp.MapGet("/queue", (JobRuntimeMonitor monitor, ILogger<Program> logger) =>
         {
             var snapshot = monitor.Snapshot();
             return Results.Ok(snapshot);
@@ -262,12 +269,15 @@ public static class ExtractionEndpoints
 
         // Clear queue (dangerous). By default clears only pending and in-progress.
         // Pass ?all=true to delete all jobs regardless of status.
-        app.MapDelete("/api/extract/queue", async (bool? all, AppDb db, JobRuntimeMonitor monitor, ILogger<Program> logger) =>
+        grp.MapDelete("/queue", async (bool? all, AppDb db, JobRuntimeMonitor monitor, ILogger<Program> logger, ClaimsPrincipal user) =>
         {
             try
             {
+                var uid = user.FindFirstValue("uid") ?? user.FindFirstValue(ClaimTypes.NameIdentifier)
+                          ?? throw new InvalidOperationException("User ID not found");
+
                 var deleteAll = all == true;
-                var query = db.ExtractionJobs.AsQueryable();
+                var query = db.ExtractionJobs.Where(j => j.OwnerId == uid);
                 if (!deleteAll)
                 {
                     query = query.Where(j => j.Status == JobStatus.Pending || j.Status == JobStatus.InProgress);

@@ -11,6 +11,8 @@ public class Program
         // Build application configuration
         var appConfig = play_app_api.Configuration.ConfigurationBuilder.BuildAppConfiguration(builder.Configuration);
 
+      
+
         // Configure services
         builder.Services
             .AddApplicationServices(builder.Configuration, appConfig)
@@ -26,7 +28,10 @@ public class Program
         logger.LogInformation("OpenRouter Model: {Model}", appConfig.OpenRouterModel);
         logger.LogInformation("Supabase Project ID: {ProjectId}", appConfig.SupabaseProjectId);
         logger.LogInformation("Allowed origins: {Origins}", string.Join(", ", appConfig.AllowedOrigins));
-        
+        logger.LogInformation("Supabase Anon Key: {SupabaseAnonKey}", appConfig.SupabaseAnonKey);
+        logger.LogInformation("Supabase Anon Key Length: {Length}", appConfig.SupabaseAnonKey?.Length ?? 0);
+        logger.LogInformation("Supabase Anon Key Is Empty: {IsEmpty}", string.IsNullOrEmpty(appConfig.SupabaseAnonKey));
+
         // Log environment variables for debugging
         var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
         logger.LogInformation("DATABASE_URL environment variable: {HasValue}", !string.IsNullOrEmpty(databaseUrl));

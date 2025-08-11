@@ -297,7 +297,8 @@ public class ExtractionJobService : BackgroundService
             {
                 Name = sheet.CharacterInfo.Name,
                 Class = sheet.CharacterInfo.Class,
-                Species = sheet.CharacterInfo.Species
+                Species = sheet.CharacterInfo.Species,
+                OwnerId = job.OwnerId
             };
 
             // Save the Character first (without the Sheet relationship)

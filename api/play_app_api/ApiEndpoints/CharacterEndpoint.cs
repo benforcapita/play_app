@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using play_app_api.Data;
+using System.Security.Claims;
 
 namespace play_app_api.ApiEndpoints;
 
@@ -7,11 +8,13 @@ public static class CharacterEndpoint
 {
     public static void MapCharacterEndpoints(this IEndpointRouteBuilder app)
     {
-        var chars = app.MapGroup("api/characters");
+        var chars = app.MapGroup("/api/characters").RequireAuthorization("UserOnly");
 
-        chars.MapGet("/", async (AppDb db) =>
+        chars.MapGet("/", async (AppDb db, ClaimsPrincipal user) =>
         {
+            var uid = user.FindFirstValue("uid") ?? user.FindFirstValue(ClaimTypes.NameIdentifier)!;
             var characters = await db.Characters
+                .Where(c => c.OwnerId == uid)
                 .Include(c => c.Sheet)
                     .ThenInclude(s => s.CharacterInfo)
                 .AsNoTracking()
@@ -20,10 +23,11 @@ public static class CharacterEndpoint
             return Results.Ok(characters);
         });
 
-        chars.MapGet("/{id:int}", async (AppDb db, int id) =>
+        chars.MapGet("/{id:int}", async (AppDb db, ClaimsPrincipal user, int id) =>
         {
+            var uid = user.FindFirstValue("uid") ?? user.FindFirstValue(ClaimTypes.NameIdentifier)!;
             var character = await db.Characters
-                .Where(c => c.Id == id)
+                .Where(c => c.OwnerId == uid && c.Id == id)
                 .Include(c => c.Sheet)
                     .ThenInclude(s => s.CharacterInfo)
                 .Include(c => c.Sheet)
@@ -80,9 +84,10 @@ public static class CharacterEndpoint
         });
         */
 
-        chars.MapPut("/{id:int}", async (AppDb db, int id, Character character) =>
+        chars.MapPut("/{id:int}", async (AppDb db, ClaimsPrincipal user, int id, Character character) =>
         {
-            var c = await db.Characters.FindAsync(id);
+            var uid = user.FindFirstValue("uid") ?? user.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            var c = await db.Characters.FirstOrDefaultAsync(x => x.Id == id && x.OwnerId == uid);
             if (c is null) return Results.NotFound();
             c.Name = character.Name;
             c.Class = character.Class;
@@ -92,28 +97,32 @@ public static class CharacterEndpoint
             return Results.Ok(c);
         });
 
-        chars.MapDelete("/{id:int}", async (AppDb db, int id) =>
+        chars.MapDelete("/{id:int}", async (AppDb db, ClaimsPrincipal user, int id) =>
         {
-            var c = await db.Characters.FindAsync(id);
+            var uid = user.FindFirstValue("uid") ?? user.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            var c = await db.Characters.FirstOrDefaultAsync(x => x.Id == id && x.OwnerId == uid);
             if (c is null) return Results.NotFound();
             db.Characters.Remove(c);
             await db.SaveChangesAsync();
             return Results.Ok(c);
         });
 
-        chars.MapGet("/{id:int}/sheet", async (AppDb db, int id) =>
+        chars.MapGet("/{id:int}/sheet", async (AppDb db, ClaimsPrincipal user, int id) =>
         {
+            var uid = user.FindFirstValue("uid") ?? user.FindFirstValue(ClaimTypes.NameIdentifier)!;
             var character = await db.Characters
+                .Where(c => c.OwnerId == uid && c.Id == id)
                 .Include(c => c.Sheet) // Must include the sheet to access it
                 .AsNoTracking()
-                .FirstOrDefaultAsync(c => c.Id == id);
+                .FirstOrDefaultAsync();
             return character?.Sheet is not null ? Results.Ok(character.Sheet) : Results.NotFound();
         });
 
-        chars.MapGet("/{id:int}/sheet/{section}", async (int id, string section, AppDb db) =>
+        chars.MapGet("/{id:int}/sheet/{section}", async (AppDb db, ClaimsPrincipal user, int id, string section) =>
         {
+            var uid = user.FindFirstValue("uid") ?? user.FindFirstValue(ClaimTypes.NameIdentifier)!;
             var character = await db.Characters
-                .Where(c => c.Id == id)
+                .Where(c => c.OwnerId == uid && c.Id == id)
                 .Include(c => c.Sheet) // We always need the sheet shell
                 .AsNoTracking()
                 .FirstOrDefaultAsync();

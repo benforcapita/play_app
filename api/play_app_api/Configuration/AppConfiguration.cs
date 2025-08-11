@@ -14,6 +14,7 @@ public class AppConfiguration
     public string? AppReferer { get; set; }
     public string? AppTitle { get; set; }
     public string SupabaseProjectId { get; set; } = string.Empty;
+    public string SupabaseAnonKey { get; set; } = string.Empty;
     public string SupabaseUrl => $"https://{SupabaseProjectId}.supabase.co";
     public string Authority => $"{SupabaseUrl}/auth/v1";
     public string CorsPolicyName { get; set; } = "SwaCors";

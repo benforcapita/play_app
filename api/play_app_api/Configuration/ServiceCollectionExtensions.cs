@@ -34,6 +34,12 @@ public static class ServiceCollectionExtensions
                 client.DefaultRequestHeaders.Add("X-Title", appConfig.AppTitle);
             }
         });
+        services.AddHttpClient("supabase", client =>
+        {
+            client.BaseAddress = new Uri(appConfig.SupabaseUrl);
+            client.DefaultRequestHeaders.Add("apikey", appConfig.SupabaseAnonKey);
+            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {appConfig.SupabaseAnonKey}");
+        });
 
         // Add CORS
         services.AddCors(options =>
