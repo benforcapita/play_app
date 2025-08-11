@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
@@ -57,32 +58,14 @@ public static class ServiceCollectionExtensions
         // Add HTTP Context Accessor
         services.AddHttpContextAccessor();
 
-        // Add Authentication
-        services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-            .AddJwtBearer(options =>
-            {
-                options.Authority = appConfig.Authority;
-                options.TokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuer = true,
-                    ValidIssuer = appConfig.Authority,
-                    ValidateAudience = false,
-                    ValidateLifetime = true,
-                };
-                options.Events = new JwtBearerEvents
-                {
-                    OnTokenValidated = ctx =>
-                    {
-                        var sub = ctx.Principal?.FindFirst("sub")?.Value;
-                        if (!string.IsNullOrEmpty(sub))
-                        {
-                            var id = (ClaimsIdentity)ctx.Principal!.Identity!;
-                            id.AddClaim(new Claim("uid", sub));
-                        }
-                        return Task.CompletedTask;
-                    }
-                };
-            });
+        // Add Authentication with custom Supabase JWT handler
+        services.AddAuthentication(options =>
+        {
+            options.DefaultAuthenticateScheme = "SupabaseJwt";
+            options.DefaultChallengeScheme = "SupabaseJwt";
+            options.DefaultForbidScheme = "SupabaseJwt";
+        })
+        .AddScheme<AuthenticationSchemeOptions, SupabaseJwtHandler>("SupabaseJwt", options => { });
 
         // Add Authorization
         services.AddAuthorization(options =>

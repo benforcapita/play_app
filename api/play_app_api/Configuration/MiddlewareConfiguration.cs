@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using play_app_api.ApiEndpoints;
 using play_app_api.Configuration;
+using System.Security.Claims;
 
 namespace play_app_api.Configuration;
 
@@ -14,6 +15,42 @@ public static class MiddlewareConfiguration
         // Configure CORS
         app.UseCors(appConfig.CorsPolicyName);
 
+        // Add custom authentication error handling middleware
+        app.Use(async (context, next) =>
+        {
+            await next();
+            
+            // Handle authentication/authorization errors
+            if (context.Response.StatusCode == 401 && !context.Response.HasStarted)
+            {
+                context.Response.ContentType = "application/json";
+                var errorResponse = new
+                {
+                    error = "Unauthorized",
+                    message = "Authentication required. Please provide a valid Bearer token.",
+                    statusCode = 401,
+                    path = context.Request.Path.Value
+                };
+                
+                var json = System.Text.Json.JsonSerializer.Serialize(errorResponse);
+                await context.Response.WriteAsync(json);
+            }
+            else if (context.Response.StatusCode == 403 && !context.Response.HasStarted)
+            {
+                context.Response.ContentType = "application/json";
+                var errorResponse = new
+                {
+                    error = "Forbidden",
+                    message = "Access denied. You do not have permission to access this resource.",
+                    statusCode = 403,
+                    path = context.Request.Path.Value
+                };
+                
+                var json = System.Text.Json.JsonSerializer.Serialize(errorResponse);
+                await context.Response.WriteAsync(json);
+            }
+        });
+
         app.UseAuthentication();
         app.UseAuthorization();
 
@@ -22,6 +59,40 @@ public static class MiddlewareConfiguration
         {
             logger.LogInformation("Ping endpoint called at {Timestamp}", DateTimeOffset.UtcNow);
             return Results.Ok(new { ok = true, at = DateTimeOffset.UtcNow });
+        });
+
+        // Test authentication endpoint
+        app.MapGet("/test-auth", (ClaimsPrincipal user, ILogger<Program> logger) =>
+        {
+            logger.LogInformation("Test auth endpoint called");
+            logger.LogInformation("User authenticated: {IsAuthenticated}", user.Identity?.IsAuthenticated);
+            logger.LogInformation("User identity name: {Name}", user.Identity?.Name);
+            logger.LogInformation("User claims count: {ClaimsCount}", user.Claims.Count());
+            
+            if (user.Identity?.IsAuthenticated == true)
+            {
+                var uid = user.FindFirstValue("uid");
+                logger.LogInformation("User authenticated with UID: {Uid}", uid);
+                return Results.Ok(new { authenticated = true, uid = uid });
+            }
+            
+            logger.LogWarning("User not authenticated, returning 401");
+            return Results.Unauthorized();
+        }).RequireAuthorization();
+
+        // Test endpoint without authorization to see if authentication works
+        app.MapGet("/test-auth-no-auth", (ClaimsPrincipal user, ILogger<Program> logger) =>
+        {
+            logger.LogInformation("Test auth endpoint (no auth required) called");
+            logger.LogInformation("User authenticated: {IsAuthenticated}", user.Identity?.IsAuthenticated);
+            logger.LogInformation("User identity name: {Name}", user.Identity?.Name);
+            logger.LogInformation("User claims count: {ClaimsCount}", user.Claims.Count());
+            
+            return Results.Ok(new { 
+                authenticated = user.Identity?.IsAuthenticated ?? false, 
+                name = user.Identity?.Name,
+                claimsCount = user.Claims.Count()
+            });
         });
 
         app.MapGet("/health", (ILogger<Program> logger) =>

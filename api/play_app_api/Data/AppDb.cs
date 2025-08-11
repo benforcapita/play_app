@@ -249,6 +249,8 @@ public class AppDb : DbContext
         var job = modelBuilder.Entity<ExtractionJob>();
         job.HasKey(j => j.Id);
         job.HasIndex(j => j.JobToken).IsUnique();
+        job.HasIndex(j => new { j.JobToken, j.OwnerId }).IsUnique();
+        job.HasIndex(j => new { j.OwnerId, j.Status, j.CreatedAt });
         job.HasMany(j => j.SectionResults)
            .WithOne(s => s.ExtractionJob)
            .HasForeignKey(s => s.ExtractionJobId)

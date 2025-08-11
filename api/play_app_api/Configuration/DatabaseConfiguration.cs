@@ -23,8 +23,15 @@ public static class DatabaseConfiguration
         // Get connection string - check environment variable first, then appsettings
         var rawConnectionString = Environment.GetEnvironmentVariable("DATABASE_URL") ?? 
                                   Environment.GetEnvironmentVariable("database-url") ??
-                                  configuration.GetConnectionString("DefaultConnection") ?? 
-                                  throw new InvalidOperationException("No database connection string configured");
+                                  configuration.GetConnectionString("DefaultConnection");
+
+        // If no connection string is configured, skip DB registration.
+        // This allows tests or hosts to register their own provider (e.g. InMemory) later.
+        if (string.IsNullOrWhiteSpace(rawConnectionString))
+        {
+            Console.WriteLine("No database connection string configured; skipping default AppDb registration");
+            return services;
+        }
         
         // Parse and fix malformed connection string if it's a URL
         var connectionString = ParseAndFixConnectionString(rawConnectionString);

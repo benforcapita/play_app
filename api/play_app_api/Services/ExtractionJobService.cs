@@ -236,6 +236,36 @@ public class ExtractionJobService : BackgroundService
             using var content = new StringContent(requestBody, Encoding.UTF8, "application/json");
             var start = DateTime.UtcNow;
             var runtimeMon = _serviceProvider.GetRequiredService<JobRuntimeMonitor>();
+            
+            // 🤖 SUPER PROMINENT AI PROCESSING NOTIFICATION! 🤖
+            // Console beep/ping for immediate attention (cross-platform)!
+            try 
+            { 
+                if (OperatingSystem.IsWindows()) 
+                { 
+                    Console.Beep(800, 200); // High frequency beep for 200ms
+                }
+                else 
+                { 
+                    Console.Write("\a"); // ASCII bell character for other platforms
+                }
+            } 
+            catch { /* Ignore beep errors */ }
+            
+            _logger.LogWarning("""
+
+                ██████████████████████████████████████████████████████████████████████████████████████████████████████████████
+                ███                                                                                                        ███
+                ███                               🤖 AI PROCESSING STARTED! 🤖                                           ███
+                ███                                                                                                        ███
+                ███  Job Token: {JobToken}                                                                                 ███
+                ███  Model:     {Model}                                                                                    ███
+                ███  Started:   {StartTime}                                                                                ███
+                ███                                                                                                        ███
+                ██████████████████████████████████████████████████████████████████████████████████████████████████████████████
+
+                """, job.JobToken, modelName, DateTime.UtcNow.ToString("HH:mm:ss.fff"));
+            
             _logger.LogInformation("OpenRouter request started for job {JobToken} using model {Model}", job.JobToken, modelName);
             runtimeMon.MarkOpenRouterStart(job.JobToken);
             var resp = await http.PostAsync("chat/completions", content, cancellationToken);

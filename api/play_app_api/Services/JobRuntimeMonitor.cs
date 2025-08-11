@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using Microsoft.Extensions.Logging;
 
 namespace play_app_api.Services;
 
@@ -11,7 +12,13 @@ public class JobRuntimeMonitor
     private readonly ConcurrentDictionary<string, RuntimeJobInfo> _activeJobs = new();
     private readonly ConcurrentQueue<RuntimeJobInfo> _recentlyCompleted = new();
     private readonly object _heartbeatLock = new();
+    private readonly ILogger<JobRuntimeMonitor> _logger;
     private WorkerHeartbeat? _lastWorker;
+
+    public JobRuntimeMonitor(ILogger<JobRuntimeMonitor> logger)
+    {
+        _logger = logger;
+    }
 
     public void MarkQueued(string jobToken, string contentType)
     {
@@ -35,6 +42,19 @@ public class JobRuntimeMonitor
             job.LastUpdatedAt = DateTime.UtcNow;
             job.LastEvent = "picked";
             _activeJobs[jobToken] = job;
+            
+            // 🔥 PROMINENT NOTIFICATION - JOB PICKED FOR PROCESSING! 🔥
+            _logger.LogWarning("""
+                
+                ╔══════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
+                ║                                          🔥 JOB PICKED FOR PROCESSING! 🔥                                    ║
+                ╠══════════════════════════════════════════════════════════════════════════════════════════════════════════════╣
+                ║  Job Token:     {JobToken}                                                                                    ║
+                ║  Content Type:  {ContentType}                                                                                 ║
+                ║  Started At:    {StartedAt}                                                                                   ║
+                ╚══════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
+                
+                """, jobToken, contentType.ToUpper(), DateTime.UtcNow.ToString("HH:mm:ss.fff"));
         }
     }
 
@@ -75,6 +95,25 @@ public class JobRuntimeMonitor
             job.State = success ? "completed" : "failed";
             job.LastEvent = success ? "completed" : "failed";
             job.LastUpdatedAt = DateTime.UtcNow;
+            
+            // 🎉 PROMINENT NOTIFICATION - JOB COMPLETED! 🎉
+            var finalIcon = success ? "🎉" : "💥";
+            var finalWord = success ? "COMPLETED" : "FAILED";
+            var totalElapsed = job.StartedAt != null ? 
+                (DateTime.UtcNow - job.StartedAt.Value).TotalSeconds.ToString("F1") + "s" : "unknown";
+            
+            _logger.LogWarning("""
+                
+                ╔══════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
+                ║                                      {FinalIcon} JOB {FinalWord}! {FinalIcon}                                             ║
+                ╠══════════════════════════════════════════════════════════════════════════════════════════════════════════════╣
+                ║  Job Token:      {JobToken}                                                                                   ║
+                ║  Total Duration: {TotalElapsed}                                                                               ║
+                ║  Subtasks:       {SubtaskCount}                                                                               ║
+                ║  Finished At:    {FinishedAt}                                                                                 ║
+                ╚══════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
+                
+                """, finalIcon, finalWord, finalIcon, jobToken, totalElapsed, job.Subtasks.Count, DateTime.UtcNow.ToString("HH:mm:ss.fff"));
             
             _recentlyCompleted.Enqueue(job);
             
@@ -127,6 +166,19 @@ public class JobRuntimeMonitor
             job.Subtasks.Add(subtask);
             job.LastEvent = $"subtask_start:{subtaskName}";
             job.LastUpdatedAt = DateTime.UtcNow;
+            
+            // 🚨 PROMINENT NOTIFICATION - SUBTASK STARTED! 🚨
+            _logger.LogWarning("""
+                
+                ╔══════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
+                ║                                            🚀 SUBTASK STARTED! 🚀                                            ║
+                ╠══════════════════════════════════════════════════════════════════════════════════════════════════════════════╣
+                ║  Job Token: {JobToken}                                                                                        ║
+                ║  Subtask:   {SubtaskName}                                                                                     ║
+                ║  Started:   {StartTime}                                                                                       ║
+                ╚══════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
+                
+                """, jobToken, subtaskName.ToUpper(), DateTime.UtcNow.ToString("HH:mm:ss.fff"));
         }
     }
 
@@ -144,6 +196,25 @@ public class JobRuntimeMonitor
             
             job.LastEvent = $"subtask_{(success ? "completed" : "failed")}:{subtaskName}";
             job.LastUpdatedAt = DateTime.UtcNow;
+            
+            // 🎯 PROMINENT NOTIFICATION - SUBTASK COMPLETED! 🎯
+            var statusIcon = success ? "✅" : "❌";
+            var statusWord = success ? "COMPLETED" : "FAILED";
+            var elapsed = subtask?.StartedAt != null ? 
+                (DateTime.UtcNow - subtask.StartedAt).TotalMilliseconds.ToString("F0") + "ms" : "unknown";
+            
+            _logger.LogWarning("""
+                
+                ╔══════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
+                ║                                        {StatusIcon} SUBTASK {StatusWord}! {StatusIcon}                                         ║
+                ╠══════════════════════════════════════════════════════════════════════════════════════════════════════════════╣
+                ║  Job Token: {JobToken}                                                                                        ║
+                ║  Subtask:   {SubtaskName}                                                                                     ║
+                ║  Duration:  {ElapsedTime}                                                                                     ║
+                ║  Finished:  {FinishTime}                                                                                      ║
+                ╚══════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
+                
+                """, statusIcon, statusWord, statusIcon, jobToken, subtaskName.ToUpper(), elapsed, DateTime.UtcNow.ToString("HH:mm:ss.fff"));
         }
     }
 
