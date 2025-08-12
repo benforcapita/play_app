@@ -7,6 +7,7 @@ public class Appearance
 {
     public int Id { get; set; }
     public int CharacterSheetId { get; set; }
+    [JsonIgnore]
     public CharacterSheet CharacterSheet { get; set; } = null!;
     [JsonPropertyName("size")] public string Size { get; set; } = "";
     [JsonPropertyName("gender")] public string Gender { get; set; } = "";

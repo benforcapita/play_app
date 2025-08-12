@@ -7,6 +7,7 @@ public class AbilityScores
 {
     public int Id { get; set; }
     public int CharacterSheetId { get; set; }
+    [JsonIgnore]
     public CharacterSheet CharacterSheet { get; set; } = null!;
     
     // Use distinct foreign key properties for each ability score

@@ -7,6 +7,7 @@ public class Spellcasting
 {
     public int Id { get; set; }
     public int CharacterSheetId { get; set; }
+    [JsonIgnore]
     public CharacterSheet CharacterSheet { get; set; } = null!;
     [JsonPropertyName("class")] public string Class { get; set; } = "";
     [JsonPropertyName("ability")] public string Ability { get; set; } = "";

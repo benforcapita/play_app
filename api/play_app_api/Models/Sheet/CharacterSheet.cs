@@ -9,6 +9,7 @@ public class CharacterSheet
     public int Id { get; set; }
     public int CharacterId { get; set; }
     [ForeignKey("CharacterId")]
+    [JsonIgnore]
     public Character Character { get; set; } = null!;
     
     [JsonPropertyName("characterInfo")]     public CharacterInfo CharacterInfo { get; set; } = new();

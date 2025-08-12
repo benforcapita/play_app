@@ -8,6 +8,7 @@ public class Skill
     public int Id { get; set; }
     public int CharacterSheetId { get; set; }
     [ForeignKey("CharacterSheetId")]
+    [JsonIgnore]
     public CharacterSheet CharacterSheet { get; set; } = null!;
     [JsonPropertyName("name")] public string Name { get; set; } = "";
     [JsonPropertyName("ability")] public string Ability { get; set; } = "";

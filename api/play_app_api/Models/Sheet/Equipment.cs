@@ -8,6 +8,7 @@ public class Equipment
 {
     public int Id { get; set; }
     public int CharacterSheetId { get; set; }
+    [JsonIgnore]
     public CharacterSheet CharacterSheet { get; set; } = null!;
     [JsonPropertyName("items")] 
     [JsonConverter(typeof(ItemsConverter))]

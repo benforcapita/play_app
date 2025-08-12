@@ -7,6 +7,7 @@ public class Proficiencies
 {
     public int Id { get; set; }
     public int CharacterSheetId { get; set; }
+    [JsonIgnore]
     public CharacterSheet CharacterSheet { get; set; } = null!;
     [JsonPropertyName("armor")]     public List<string> Armor { get; set; } = new();
     [JsonPropertyName("weapons")]   public List<string> Weapons { get; set; } = new();

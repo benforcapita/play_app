@@ -7,6 +7,7 @@ public class Combat
 {
     public int Id { get; set; }
     public int CharacterSheetId { get; set; }
+    [JsonIgnore]
     public CharacterSheet CharacterSheet { get; set; } = null!;
     [JsonPropertyName("armorClass")] public int ArmorClass { get; set; } = 10;
     [JsonPropertyName("initiative")] public int Initiative { get; set; } = 0;
