@@ -1,0 +1,32 @@
+{
+  "/api/*": {
+    "target": "http://localhost:5097",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug"
+  },
+  "/ping": {
+    "target": "http://localhost:5097",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug"
+  },
+  "/health": {
+    "target": "http://localhost:5097",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug"
+  },
+  "/test-auth*": {
+    "target": "http://localhost:5097",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug"
+  },
+  "/debug/*": {
+    "target": "http://localhost:5097",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug"
+  }
+}

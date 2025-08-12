@@ -70,7 +70,8 @@
               "buildTarget": "play-app:build:production"
             },
             "development": {
-              "buildTarget": "play-app:build:development"
+              "buildTarget": "play-app:build:development",
+              "proxyConfig": "proxy.conf.json"
             }
           },
           "defaultConfiguration": "development"
