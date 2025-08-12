@@ -1,6 +1,6 @@
 import { ApplicationConfig, provideBrowserGlobalErrorListeners, provideZonelessChangeDetection, isDevMode } from '@angular/core';
 import { provideRouter } from '@angular/router';
-
+import { authInterceptor } from './core/interceptors/auth.interceptor';
 import { inject, InjectionToken } from '@angular/core';
 import { provideHttpClient, withFetch, withInterceptors, HttpInterceptorFn } from '@angular/common/http';
 import { environment } from '../enviroments/enviroment';
@@ -37,7 +37,7 @@ export const appConfig: ApplicationConfig = {
     // Provide a single HttpClient for the whole app and prefix relative URLs with the API base
     provideHttpClient(
       withFetch(),
-      withInterceptors([apiBaseUrlInterceptor])
+      withInterceptors([authInterceptor, apiBaseUrlInterceptor])
     ),
 
     // Make the base URL configurable per environment
