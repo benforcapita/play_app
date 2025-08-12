@@ -1,31 +1,31 @@
 {
   "/api/*": {
-    "target": "http://localhost:5097",
-    "secure": false,
+    "target": "https://play-api.jollysand-61570848.westeurope.azurecontainerapps.io",
+    "secure": true,
     "changeOrigin": true,
     "logLevel": "debug"
   },
   "/ping": {
-    "target": "http://localhost:5097",
-    "secure": false,
+    "target": "https://play-api.jollysand-61570848.westeurope.azurecontainerapps.io",
+    "secure": true,
     "changeOrigin": true,
     "logLevel": "debug"
   },
   "/health": {
-    "target": "http://localhost:5097",
-    "secure": false,
+    "target": "https://play-api.jollysand-61570848.westeurope.azurecontainerapps.io",
+    "secure": true,
     "changeOrigin": true,
     "logLevel": "debug"
   },
   "/test-auth*": {
-    "target": "http://localhost:5097",
-    "secure": false,
+    "target": "https://play-api.jollysand-61570848.westeurope.azurecontainerapps.io",
+    "secure": true,
     "changeOrigin": true,
     "logLevel": "debug"
   },
   "/debug/*": {
-    "target": "http://localhost:5097",
-    "secure": false,
+    "target": "https://play-api.jollysand-61570848.westeurope.azurecontainerapps.io",
+    "secure": true,
     "changeOrigin": true,
     "logLevel": "debug"
   }
