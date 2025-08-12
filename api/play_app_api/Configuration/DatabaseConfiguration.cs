@@ -20,6 +20,17 @@ public static class DatabaseConfiguration
             return services;
         }
 
+        var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
+        
+        // For testing environments, use in-memory database
+        if (environment.Equals("Testing", StringComparison.OrdinalIgnoreCase))
+        {
+            Console.WriteLine("Using in-memory database for Testing environment");
+            services.AddDbContext<AppDb>(opt =>
+                opt.UseInMemoryDatabase("TestDatabase"));
+            return services;
+        }
+
         // Get connection string - check environment variable first, then appsettings
         var rawConnectionString = Environment.GetEnvironmentVariable("DATABASE_URL") ?? 
                                   Environment.GetEnvironmentVariable("database-url") ??

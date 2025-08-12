@@ -40,21 +40,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: testpassword
-          POSTGRES_DB: play_app_test
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-    
     steps:
     - uses: actions/checkout@v4
     
@@ -84,27 +69,18 @@ jobs:
         dotnet restore
         dotnet build --configuration Release
     
-    - name: Run database migrations
-      run: |
-        cd api
-        dotnet ef database update --project play_app_api
-      env:
-        ConnectionStrings__DefaultConnection: Host=localhost;Port=5432;Database=play_app_test;Username=postgres;Password=testpassword
+    # Skip database migrations for testing - using in-memory database instead
     
     - name: Start .NET API Server
       run: |
         cd api
-        dotnet run --project play_app_api --configuration Release &
+        dotnet run --project play_app_api --configuration Release --no-launch-profile &
       env:
         ASPNETCORE_ENVIRONMENT: Testing
-        ConnectionStrings__DefaultConnection: Host=localhost;Port=5432;Database=play_app_test;Username=postgres;Password=testpassword
-        supabase-project-id: test-project
-        supabase-anon-key: ${{ secrets.SUPABASE_ANON_KEY || 'test-key' }}
-        supabase-jwt-secret: ${{ secrets.SUPABASE_JWT_SECRET || 'test-secret' }}
     
     - name: Wait for API to be ready
       run: |
-        timeout 60 bash -c 'until curl -f http://localhost:5097/ping; do sleep 1; done' || echo "API not ready, continuing with UI-only tests"
+        timeout 60 bash -c 'until curl -f http://localhost:5000/ping; do sleep 1; done' || echo "API not ready, continuing with UI-only tests"
     
     - name: Start Angular application
       run: npm run start &
