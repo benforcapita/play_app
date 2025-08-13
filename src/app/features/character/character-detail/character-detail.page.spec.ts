@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { provideZonelessChangeDetection } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { CharacterDetailPage } from './character-detail.page';
@@ -14,6 +15,7 @@ describe('CharacterDetailPage', () => {
     TestBed.configureTestingModule({
       imports: [CharacterDetailPage],
       providers: [
+        provideZonelessChangeDetection(),
         { provide: ActivatedRoute, useClass: ActivatedRouteMock },
         { provide: CharactersService, useClass: CharactersServiceMock },
       ]
@@ -34,6 +36,7 @@ describe('CharacterDetailPage', () => {
     TestBed.configureTestingModule({
       imports: [CharacterDetailPage],
       providers: [
+        provideZonelessChangeDetection(),
         { provide: ActivatedRoute, useClass: ActivatedRouteMock },
         { provide: CharactersService, useClass: FailingSvc },
       ]

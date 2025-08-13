@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { provideZonelessChangeDetection } from '@angular/core';
 import { LoginPage } from './login.page';
 import { AuthService } from '../../../core/services/auth.service';
 import { Router } from '@angular/router';
@@ -17,6 +18,7 @@ describe('LoginPage', () => {
     TestBed.configureTestingModule({
       imports: [LoginPage],
       providers: [
+        provideZonelessChangeDetection(),
         { provide: AuthService, useClass: AuthServiceMock },
         { provide: Router, useClass: RouterMock }
       ]

@@ -1,6 +1,8 @@
 import { TestBed } from '@angular/core/testing';
+import { provideZonelessChangeDetection } from '@angular/core';
 import { of, throwError } from 'rxjs';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
+import { RouterTestingModule } from '@angular/router/testing';
 import { By } from '@angular/platform-browser';
 import { CharacterListPage } from './character-list.page';
 import { CharactersService } from '../../../core/services/characters.services';
@@ -9,17 +11,23 @@ import { AuthService } from '../../../core/services/auth.service';
 class CharactersServiceMock {
   list = jasmine.createSpy('list').and.returnValue(of([{ id: 1, name: 'Ayla', class: 'Rogue', species: 'Elf', level: 3, sheet: {} as any }]));
 }
-class RouterMock { navigate = jasmine.createSpy('navigate'); }
+class RouterMock {}
 class AuthServiceMock { logout = jasmine.createSpy('logout'); }
+class ActivatedRouteMock { 
+  snapshot = { paramMap: new Map() }; 
+  queryParams = of({});
+}
 
 describe('CharacterListPage', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
-      imports: [CharacterListPage],
+      imports: [CharacterListPage, RouterTestingModule],
       providers: [
+        provideZonelessChangeDetection(),
         { provide: CharactersService, useClass: CharactersServiceMock },
-        { provide: Router, useClass: RouterMock },
+        // Use RouterTestingModule instead of custom Router mock
         { provide: AuthService, useClass: AuthServiceMock },
+        { provide: ActivatedRoute, useClass: ActivatedRouteMock },
       ]
     });
   });
@@ -46,10 +54,11 @@ describe('CharacterListPage', () => {
     const fixture = TestBed.createComponent(CharacterListPage);
     const comp = fixture.componentInstance;
     const auth = TestBed.inject(AuthService) as unknown as AuthServiceMock;
-    const router = TestBed.inject(Router) as unknown as RouterMock;
+    const router = TestBed.inject(Router);
+    const navSpy = spyOn(router, 'navigate');
 
     comp.logout();
     expect(auth.logout).toHaveBeenCalled();
-    expect(router.navigate).toHaveBeenCalledWith(['/login']);
+    expect(navSpy).toHaveBeenCalledWith(['/login']);
   });
 });
