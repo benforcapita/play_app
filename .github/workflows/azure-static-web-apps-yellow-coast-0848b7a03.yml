@@ -31,6 +31,19 @@ jobs:
         run: npm run test -- --watch=false --browsers=ChromeHeadless
       - name: Build application
         run: npm run build -- --configuration=production
+      - name: Ensure index.html exists in browser output
+        run: |
+          set -e
+          echo "Listing dist contents:" && ls -la dist/play-app || true
+          echo "Listing browser contents:" && ls -la dist/play-app/browser || true
+          if [ -f dist/play-app/browser/index.html ]; then
+            echo "index.html found in browser output";
+          elif [ -f dist/play-app/browser/index.csr.html ]; then
+            echo "index.html not found; copying index.csr.html -> index.html";
+            cp dist/play-app/browser/index.csr.html dist/play-app/browser/index.html;
+          else
+            echo "No index.html or index.csr.html found in browser output";
+          fi
       - name: Build And Deploy
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
