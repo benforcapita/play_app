@@ -90,7 +90,7 @@ public static class DatabaseConfiguration
                 opt.UseNpgsql(connectionString, npgsql =>
                 {
                     npgsql.EnableRetryOnFailure(maxRetryCount: 5, maxRetryDelay: TimeSpan.FromSeconds(2), errorCodesToAdd: null);
-                    npgsql.CommandTimeout(30);
+                    npgsql.CommandTimeout(120); // Increased from 30 to 120 seconds
                 }));
         }
 

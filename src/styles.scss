@@ -1,1 +1,130 @@
-/* You can add global styles to this file, and also import other style files */
+/* Global design tokens and theme inspired by the provided character screens */
+
+/* Fonts */
+html, body {
+  font-family: 'Lexend', 'Noto Sans', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  background: #111418;
+  color: #e5e7eb;
+  min-height: 100%;
+}
+
+/* Colors */
+$bg-0: #111418;
+$bg-1: #0b1220;
+$bg-2: #1c2126;
+$line-1: #1f2a44;
+$line-2: #3c4753;
+$text-0: #ffffff;
+$text-1: #e5e7eb;
+$text-2: #cbd5e1;
+$muted: #9dabb8;
+$brand: #1773cf;
+$brand-2: #7c3aed;
+
+/* Layout helpers */
+.container-narrow {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+/* Cards */
+.card {
+  background: $bg-1;
+  border: 1px solid $line-1;
+  border-radius: 16px;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  padding: 0 16px;
+  border-radius: 12px;
+  cursor: pointer;
+  user-select: none;
+  transition: transform .06s ease, opacity .2s ease, background-color .2s ease, border-color .2s ease;
+}
+.btn:active { transform: translateY(1px); }
+
+.btn-primary {
+  @extend .btn;
+  background: linear-gradient(135deg, $brand, $brand-2);
+  color: white;
+  border: none;
+}
+
+.btn-ghost {
+  @extend .btn;
+  background: transparent;
+  border: 1px solid #2a3552;
+  color: $text-2;
+}
+
+/* List rows */
+.row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px;
+  min-height: 72px;
+  background: $bg-0;
+  border-top: 1px solid transparent;
+}
+.row + .row { border-top-color: $line-2; }
+
+.row-thumb {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  flex: 0 0 auto;
+}
+
+.row-title { color: $text-0; font-weight: 600; }
+.row-sub { color: $muted; font-size: 14px; }
+
+/* Headings */
+.h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.015em; }
+.h2 { font-size: 18px; font-weight: 700; letter-spacing: -0.015em; }
+.muted { color: $muted; }
+
+/* Divider */
+.divider { border-top: 1px solid $line-2; }
+
+/* Bottom nav mock */
+.bottom-nav {
+  display: flex;
+  gap: 8px;
+  border-top: 1px solid #293038;
+  background: $bg-2;
+  padding: 8px 16px 12px;
+}
+.bottom-nav a { color: $muted; text-decoration: none; }
+.bottom-nav a.active { color: $text-0; }
+
+/* Spinner */
+.spinner {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 3px solid $line-1;
+  border-top-color: #3b82f6;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Links reset */
+a { color: inherit; }
+button { font-family: inherit; }
+
+/* Common error text */
+.error {
+  margin-top: 12px;
+  color: #fca5a5;
+  font-size: 13px;
+}

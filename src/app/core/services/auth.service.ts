@@ -1,4 +1,5 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, signal, inject, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { tap } from 'rxjs/operators';
 
@@ -24,10 +25,13 @@ export class AuthService {
     token = this._token.asReadonly();
     private readonly TOKEN_KEY = 'auth_token';
     private readonly TOKEN_EXPIRY_KEY = 'auth_token_expiry';
+    private readonly platformId = inject(PLATFORM_ID);
 
     constructor(private http: HttpClient) {
-        // Initialize token from localStorage on service creation
-        this.initializeTokenFromStorage();
+        // Only attempt storage access in the browser
+        if (isPlatformBrowser(this.platformId)) {
+            this.initializeTokenFromStorage();
+        }
     }
 
     private initializeTokenFromStorage(): void {
@@ -38,6 +42,9 @@ export class AuthService {
     }
 
     private getTokenFromStorage(): TokenData | null {
+        if (!isPlatformBrowser(this.platformId)) {
+            return null;
+        }
         try {
             const token = localStorage.getItem(this.TOKEN_KEY);
             const expiry = localStorage.getItem(this.TOKEN_EXPIRY_KEY);
@@ -46,10 +53,16 @@ export class AuthService {
                 return null;
             }
 
-            const expiresAt = parseInt(expiry, 10);
+            let expiresAt = parseInt(expiry, 10);
             if (isNaN(expiresAt)) {
                 this.clearTokenFromStorage();
                 return null;
+            }
+
+            // Auto-migrate seconds -> milliseconds if needed
+            if (expiresAt < 1e12) {
+                expiresAt = expiresAt * 1000;
+                this.saveTokenToStorage(token, expiresAt);
             }
 
             return { token, expiresAt };
@@ -60,6 +73,9 @@ export class AuthService {
     }
 
     private saveTokenToStorage(token: string, expiresAt: number): void {
+        if (!isPlatformBrowser(this.platformId)) {
+            return;
+        }
         try {
             localStorage.setItem(this.TOKEN_KEY, token);
             localStorage.setItem(this.TOKEN_EXPIRY_KEY, expiresAt.toString());
@@ -69,6 +85,9 @@ export class AuthService {
     }
 
     private clearTokenFromStorage(): void {
+        if (!isPlatformBrowser(this.platformId)) {
+            return;
+        }
         try {
             localStorage.removeItem(this.TOKEN_KEY);
             localStorage.removeItem(this.TOKEN_EXPIRY_KEY);
@@ -86,9 +105,15 @@ export class AuthService {
             .pipe(
                 tap(res => {
                     this._token.set(res.access_token);
-                    // Use expires_at if provided, otherwise calculate from expires_in
-                    const expiresAt = res.expires_at || (Date.now() + (res.expires_in || 3600) * 1000);
-                    this.saveTokenToStorage(res.access_token, expiresAt);
+                    // Normalize expiry to milliseconds
+                    let expiresAtMs: number;
+                    if (typeof res.expires_at === 'number' && !isNaN(res.expires_at)) {
+                        expiresAtMs = res.expires_at < 1e12 ? res.expires_at * 1000 : res.expires_at;
+                    } else {
+                        const seconds = (res.expires_in ?? 3600);
+                        expiresAtMs = Date.now() + seconds * 1000;
+                    }
+                    this.saveTokenToStorage(res.access_token, expiresAtMs);
                 })
             );
     }
@@ -104,6 +129,10 @@ export class AuthService {
     }
 
     getToken(): string | null {
+        if (!isPlatformBrowser(this.platformId)) {
+            // Avoid SSR touching browser storage. Treat as unauthenticated on server.
+            return null;
+        }
         const tokenData = this.getTokenFromStorage();
         
         if (!tokenData) {

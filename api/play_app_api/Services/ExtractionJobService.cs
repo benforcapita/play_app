@@ -66,7 +66,7 @@ public class ExtractionJobService : BackgroundService
         try
         {
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            cts.CancelAfter(TimeSpan.FromSeconds(10));
+            cts.CancelAfter(TimeSpan.FromSeconds(30)); // Increased timeout
             pendingCount = await readContext.ExtractionJobs.CountAsync(j => j.Status == JobStatus.Pending, cts.Token);
         }
         catch (Exception ex)
@@ -76,7 +76,7 @@ public class ExtractionJobService : BackgroundService
         try
         {
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            cts.CancelAfter(TimeSpan.FromSeconds(10));
+            cts.CancelAfter(TimeSpan.FromSeconds(30)); // Increased timeout
             inProgressCount = await readContext.ExtractionJobs.CountAsync(j => j.Status == JobStatus.InProgress, cts.Token);
         }
         catch (Exception ex)
@@ -92,7 +92,7 @@ public class ExtractionJobService : BackgroundService
         {
             _logger.LogDebug("Fetching pending jobs (limit={Limit})", concurrencyLimit);
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            cts.CancelAfter(TimeSpan.FromSeconds(30)); // Increase timeout
+            cts.CancelAfter(TimeSpan.FromSeconds(60)); // Increased timeout for job fetching
             pendingJobIds = await readContext.ExtractionJobs
                 .Where(j => j.Status == JobStatus.Pending)
                 .OrderBy(j => j.CreatedAt)
@@ -122,12 +122,21 @@ public class ExtractionJobService : BackgroundService
             var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
             var runtimeMon = scope.ServiceProvider.GetRequiredService<JobRuntimeMonitor>();
 
-            var job = await dbContext.ExtractionJobs.FirstOrDefaultAsync(j => j.Id == jobId, cancellationToken);
+            var job = await dbContext.ExtractionJobs
+                .Where(j => j.Id == jobId)
+                .Select(j => new { j.Id, j.JobToken, j.ContentType, j.Status, j.CreatedAt, j.StartedAt, j.CompletedAt, j.ErrorMessage, j.FileName })
+                .FirstOrDefaultAsync(cancellationToken);
+            
             if (job != null)
             {
-                _logger.LogInformation("Picked job {JobToken} (contentType={ContentType}) for processing", job.JobToken, job.ContentType);
-                runtimeMon.MarkPicked(job.JobToken, job.ContentType);
-                await ProcessJob(job, dbContext, httpClientFactory, configuration, cancellationToken);
+                // Load the full job entity for processing
+                var fullJob = await dbContext.ExtractionJobs.FirstOrDefaultAsync(j => j.Id == jobId, cancellationToken);
+                if (fullJob != null)
+                {
+                    _logger.LogInformation("Picked job {JobToken} (contentType={ContentType}) for processing", fullJob.JobToken, fullJob.ContentType);
+                    runtimeMon.MarkPicked(fullJob.JobToken, fullJob.ContentType);
+                    await ProcessJob(fullJob, dbContext, httpClientFactory, configuration, cancellationToken);
+                }
             }
             else
             {

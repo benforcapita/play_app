@@ -1,17 +1,18 @@
-import { Component, signal, OnDestroy } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
-import { NgIf, NgFor, JsonPipe, TitleCasePipe, DatePipe } from '@angular/common';
+import { Component, signal, OnDestroy, OnInit } from '@angular/core';
+import { NgIf } from '@angular/common';
+import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
 import { ApiService } from './core/services/api.service';
 import { CharactersService } from './core/services/characters.services';
 import { Character, CharacterSheet, SheetSectionKey, ExtractionJobResponse, ExtractionJobStatus, ExtractionResult } from './core/models/character.models';
+import { JobIndicatorComponent } from './core/components/job-indicator.component';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, NgIf, NgFor, JsonPipe, TitleCasePipe, DatePipe],
+  imports: [RouterOutlet, NgIf, JobIndicatorComponent],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
-export class App implements OnDestroy {
+export class App implements OnInit, OnDestroy {
   protected readonly title = signal('play-app');
 
   // Display state for API calls
@@ -33,7 +34,7 @@ export class App implements OnDestroy {
   isExtracting = signal<boolean>(false);
   statusCheckInterval = signal<any>(null);
 
-  constructor(private api: ApiService, private charactersService: CharactersService) {}
+  constructor(private api: ApiService, private charactersService: CharactersService, private router: Router) {}
 
   checkPing() {
     this.error.set(null);
@@ -288,5 +289,32 @@ export class App implements OnDestroy {
   // Cleanup on component destroy
   ngOnDestroy() {
     this.stopPolling();
+  }
+
+  goBack() {
+    // Try history back; fallback to characters
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      window.history.back();
+    } else {
+      this.router.navigate(['/characters']);
+    }
+  }
+
+  // Back button visibility (hide on character list page)
+  showBack = signal(true);
+
+  ngOnInit() {
+    this.updateBackVisibility(this.router.url);
+    this.router.events.subscribe((e) => {
+      if (e instanceof NavigationEnd) {
+        this.updateBackVisibility(e.urlAfterRedirects || e.url);
+      }
+    });
+  }
+
+  private updateBackVisibility(url: string) {
+    const path = url.split('?')[0];
+    const noBackPaths = ['/characters', '/login'];
+    this.showBack.set(!noBackPaths.includes(path));
   }
 }
