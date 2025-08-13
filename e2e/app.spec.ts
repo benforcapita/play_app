@@ -22,193 +22,60 @@ test.describe('D&D Character App - Database & Auth E2E Tests', () => {
   test.describe('Application Startup & Database Connection', () => {
     test('should load the application successfully', async ({ page }) => {
       await expect(page).toHaveTitle(/PlayApp/);
-      await expect(page.locator('router-outlet')).toBeAttached();
+      // Login page should be shown by default
+      await expect(page.getByRole('heading', { name: /Welcome back/i })).toBeVisible();
     });
-
-    test('should display all main sections', async ({ page }) => {
-      // API Service Test section
-      const apiSection = page.locator('.api-test-container').first();
-      await expect(apiSection).toBeVisible();
-      await expect(apiSection.locator('h2')).toContainText('API Service Test');
-      
-      // Character API Test section  
-      const characterSection = page.locator('.api-test-container').nth(1);
-      await expect(characterSection).toBeVisible();
-      await expect(characterSection.locator('h2')).toContainText('Character API Test');
+    
+    test('API ping and health endpoints should respond (direct HTTP)', async ({ request }) => {
+      const ping = await request.get('http://localhost:5000/ping');
+      expect(ping.ok()).toBeTruthy();
+      const health = await request.get('http://localhost:5000/health');
+      expect(health.ok()).toBeTruthy();
     });
   });
 
   test.describe('Database Connectivity Tests', () => {
-    test('should connect to API and verify database health', async ({ page }) => {
-      const pingButton = page.locator('.ping-button');
-      await pingButton.click();
-      
-      // Wait for API response
-      await page.waitForTimeout(2000);
-      
-      // Ping should work (public endpoint) - either show result or no error
-      const errorDisplay = page.locator('.error-message');
-      const resultDisplay = page.locator('.result-display');
-      
-      // Either result should be visible OR no error should be shown
-      const hasResult = await resultDisplay.isVisible();
-      const hasError = await errorDisplay.isVisible();
-      
-      if (!hasResult && !hasError) {
-        // If neither result nor error, the API might be down - that's okay for this test
-        console.log('API might be unavailable - test passes if no errors in console');
-      } else if (hasError) {
-        // If there's an error, it should not be about the ping endpoint itself
-        const errorText = await errorDisplay.textContent();
-        expect(errorText).not.toContain('ping');
-      }
-    });
-
-    test('should verify health endpoint responds', async ({ page }) => {
-      const healthButton = page.locator('.health-button');
-      await healthButton.click();
-      
-      await page.waitForTimeout(1000);
-      
-      // Health should work (public endpoint)
-      const errorDisplay = page.locator('.error-message');
-      await expect(errorDisplay).not.toBeVisible();
+    test('characters route should redirect unauthenticated users to login', async ({ page }) => {
+      await page.goto('/characters');
+      await expect(page.getByRole('heading', { name: /Welcome back/i })).toBeVisible();
     });
   });
 
   test.describe('Supabase Authentication Tests', () => {
-    test('should display character management UI elements', async ({ page }) => {
-      const characterSection = page.locator('.api-test-container').nth(1);
-      
-      // Verify character ID input
-      const characterIdInput = characterSection.locator('#characterId');
-      await expect(characterIdInput).toBeVisible();
-      await expect(characterIdInput).toHaveAttribute('type', 'number');
-      
-      // Verify sheet section select
-      const sheetSectionSelect = characterSection.locator('#sheetSection');
-      await expect(sheetSectionSelect).toBeVisible();
-      
-      // Verify management buttons exist
-      await expect(characterSection.locator('button:has-text("List All Characters")')).toBeVisible();
-      await expect(characterSection.locator('button:has-text("Get Character")').first()).toBeVisible();
-    });
-
-    test('should test authentication requirement for protected endpoints', async ({ page }) => {
-      // Test List Characters endpoint (requires auth)
-      const listButton = page.locator('button:has-text("List All Characters")');
-      await listButton.click();
-      
-      await page.waitForTimeout(2000);
-      
-      // Should show error since no JWT token provided
-      // Check if error message appears or if the button action at least doesn't crash
-      const errorDisplay = page.locator('.error-message');
-      const hasError = await errorDisplay.isVisible();
-      
-      if (hasError) {
-        await expect(errorDisplay).toContainText('Error:');
-      } else {
-        // If no error display, the API might be down or responding differently
-        // That's okay - the important thing is the UI doesn't crash
-        console.log('No error display found - API might be unavailable');
-      }
-    });
-
-    test('should test Get Character endpoint authentication', async ({ page }) => {
-      // Test Get Character endpoint (requires auth) - use first button with "Get Character" text
-      const getButton = page.locator('button:has-text("Get Character")').first();
-      await getButton.click();
-      
-      await page.waitForTimeout(2000);
-      
-      // Should show error (either in error display or no crash)
-      const errorDisplay = page.locator('.error-message');
-      const hasError = await errorDisplay.isVisible();
-      
-      if (hasError) {
-        await expect(errorDisplay).toContainText('Error:');
-      } else {
-        console.log('No error display found - API might be unavailable or responding differently');
-      }
+    test('protected API endpoints should return 401 when unauthenticated (direct HTTP)', async ({ request }) => {
+      const resList = await request.get('http://localhost:5000/api/characters');
+      expect(resList.status()).toBe(401);
+      const resGet = await request.get('http://localhost:5000/api/characters/1');
+      expect(resGet.status()).toBe(401);
     });
   });
 
   test.describe('Database Schema & Character Structure Tests', () => {
-    test('should verify character sheet section options match database schema', async ({ page }) => {
-      const sheetSectionSelect = page.locator('#sheetSection');
-      
-      // These should match the character sheet sections in your database
-      const expectedSections = [
-        'Character Info',
-        'Appearance', 
-        'Ability Scores',
-        'Saving Throws',
-        'Skills',
-        'Combat',
-        'Proficiencies',
-        'Features and Traits',
-        'Equipment',
-        'Spellcasting',
-        'Persona',
-        'Backstory'
-      ];
-      
-      for (const section of expectedSections) {
-        const option = sheetSectionSelect.locator(`option:has-text("${section}")`);
-        await expect(option).toBeAttached();
-      }
-    });
-
-    test('should verify UI elements exist for character operations', async ({ page }) => {
-      // Character ID input for database lookups
-      const characterIdInput = page.locator('#characterId');
-      await expect(characterIdInput).toHaveValue('1'); // Default value
-      
-      // Results container exists (may be hidden initially)
-      const resultsContainer = page.locator('.results-container');
-      await expect(resultsContainer).toBeAttached();
-      
-      // Character operation buttons
-      const characterSection = page.locator('.api-test-container').nth(1);
-      await expect(characterSection.locator('button:has-text("Update Character")')).toBeDisabled(); // Should be disabled initially
+    test('login form should have required inputs', async ({ page }) => {
+      const emailInput = page.getByRole('textbox', { name: /email/i });
+      await expect(emailInput).toBeVisible();
+      const passwordInput = page.getByRole('textbox', { name: /password/i }).or(page.locator('input[type="password"]'));
+      await expect(passwordInput).toBeVisible();
     });
   });
 
   test.describe('Application Responsiveness & Accessibility', () => {
-    test('should have proper form labels for accessibility', async ({ page }) => {
-      const characterIdLabel = page.locator('label[for="characterId"]');
-      await expect(characterIdLabel).toBeVisible();
-      await expect(characterIdLabel).toContainText('Character ID');
-      
-      const sheetSectionLabel = page.locator('label[for="sheetSection"]');
-      await expect(sheetSectionLabel).toBeVisible();
-      await expect(sheetSectionLabel).toContainText('Sheet Section');
+    test('should have proper form labels on login', async ({ page }) => {
+      await expect(page.getByText('Email')).toBeVisible();
+      await expect(page.getByText('Password')).toBeVisible();
     });
 
     test('should work on mobile viewport', async ({ page }) => {
       await page.setViewportSize({ width: 375, height: 667 });
-      
-      // Main sections should still be visible on mobile
-      const apiSection = page.locator('.api-test-container').first();
-      await expect(apiSection).toBeVisible();
-      
-      const characterSection = page.locator('.api-test-container').nth(1);
-      await expect(characterSection).toBeVisible();
-      
-      // Buttons should still be accessible
-      await expect(page.locator('.ping-button')).toBeVisible();
+      await expect(page.getByRole('heading', { name: /Welcome back/i })).toBeVisible();
+      await expect(page.getByRole('button', { name: /Sign in/i })).toBeVisible();
     });
   });
 
   test.describe('Integration Tests Summary', () => {
     test('should verify application title and basic structure', async ({ page }) => {
       await expect(page).toHaveTitle(/PlayApp/);
-      
-      // Check main application sections exist
-      const headings = page.locator('h2');
-      await expect(headings.nth(0)).toContainText('API Service Test');
-      await expect(headings.nth(1)).toContainText('Character API Test');
+      await expect(page.getByRole('heading', { name: /Welcome back/i })).toBeVisible();
     });
 
     test('should handle errors gracefully', async ({ page }) => {
