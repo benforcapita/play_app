@@ -531,12 +531,10 @@ export class ExtractPage implements OnDestroy {
           this.uploadProgress.set(0);
         }, 500);
       },
-      error: (error) => {
+      error: () => {
         clearInterval(progressInterval);
-        console.error('Upload failed:', error);
         this.isUploading.set(false);
         this.uploadProgress.set(0);
-        // You could show an error message here
       }
     });
   }

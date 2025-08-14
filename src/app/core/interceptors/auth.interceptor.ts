@@ -19,8 +19,7 @@ export const authInterceptor:HttpInterceptorFn = (req, next) => {
     if (isPlatformBrowser(platformId)) {
         try {
             token = auth.getToken();
-        } catch (error) {
-            console.error('Error getting token:', error);
+        } catch {
         }
     }
 
