@@ -6,7 +6,6 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideZonelessChangeDetection, signal } from '@angular/core';
 import { App } from './app';
-import { ApiService } from './core/services/api.service';
 import { CharactersService } from './core/services/characters.services';
 import { ExtractionService } from './core/services/extraction.service';
 
@@ -22,7 +21,6 @@ describe('App Integration Tests', () => {
         provideRouter([]),
         provideHttpClient(),
         provideHttpClientTesting(),
-        ApiService,
         CharactersService,
         {
           provide: ExtractionService,

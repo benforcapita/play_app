@@ -6,21 +6,16 @@ import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideZonelessChangeDetection, signal } from '@angular/core';
 import { App } from './app';
-import { ApiService } from './core/services/api.service';
 import { CharactersService } from './core/services/characters.services';
 import { ExtractionService } from './core/services/extraction.service';
-import { of, throwError } from 'rxjs';
 
 describe('App', () => {
-  let mockApiService: jasmine.SpyObj<ApiService>;
   let mockCharactersService: jasmine.SpyObj<CharactersService>;
   let mockExtractionService: jasmine.SpyObj<ExtractionService>;
 
   beforeEach(async () => {
-    const apiSpy = jasmine.createSpyObj('ApiService', ['getPing', 'getHealth']);
     const charactersSpy = jasmine.createSpyObj('CharactersService', [
-      'list', 'get', 'create', 'update', 'delete', 'getSheet',
-      'startExtraction', 'getExtractionStatus', 'getExtractionResult'
+      'list', 'get', 'create', 'update', 'delete', 'getSheet'
     ]);
     const extractionSpy = jasmine.createSpyObj('ExtractionService', [
       'startExtraction', 'checkJobStatus', 'getJobResult', 'removeJob', 'clearAllJobs'
@@ -35,13 +30,11 @@ describe('App', () => {
         provideZonelessChangeDetection(),
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: ApiService, useValue: apiSpy },
         { provide: CharactersService, useValue: charactersSpy },
         { provide: ExtractionService, useValue: extractionSpy }
       ]
     }).compileComponents();
 
-    mockApiService = TestBed.inject(ApiService) as jasmine.SpyObj<ApiService>;
     mockCharactersService = TestBed.inject(CharactersService) as jasmine.SpyObj<CharactersService>;
     mockExtractionService = TestBed.inject(ExtractionService) as jasmine.SpyObj<ExtractionService>;
   });
