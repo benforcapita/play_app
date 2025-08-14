@@ -20,7 +20,6 @@ export const authInterceptor:HttpInterceptorFn = (req, next) => {
         try {
             token = auth.getToken();
         } catch (error) {
-            console.error('Error getting token:', error);
         }
     }
 
