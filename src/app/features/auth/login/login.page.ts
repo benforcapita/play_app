@@ -15,8 +15,9 @@ import { AuthService } from '../../../core/services/auth.service';
       <p class="sub">Sign in to continue</p>
 
       <form (ngSubmit)="onSubmit()" #form="ngForm" novalidate>
-        <label>Email</label>
+        <label for="email">Email</label>
         <input
+          id="email"
           name="email"
           type="email"
           required
@@ -25,8 +26,9 @@ import { AuthService } from '../../../core/services/auth.service';
           [disabled]="isLoading()"
         />
 
-        <label>Password</label>
+        <label for="password">Password</label>
         <input
+          id="password"
           name="password"
           type="password"
           required
