@@ -113,7 +113,6 @@ export class ExtractionService {
         });
       }),
       catchError(error => {
-        console.error('Error checking job status:', error);
         this.updateJob(jobToken, {
           status: 'failed',
           errorMessage: error.message || 'Failed to check status'
@@ -196,7 +195,7 @@ export class ExtractionService {
           }
         }
       } catch (error) {
-        console.error('Error loading jobs from storage:', error);
+
       }
     }
   }

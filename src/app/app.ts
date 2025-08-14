@@ -136,42 +136,31 @@ export class App implements OnInit, OnDestroy {
     const target = event.target as HTMLInputElement;
     const file = target.files?.[0];
     if (file) {
-      console.log('File selected for extraction:', {
-        name: file.name,
-        size: file.size,
-        type: file.type,
-        lastModified: file.lastModified
-      });
       this.startExtraction(file);
     } else {
-      console.warn('No file selected');
+      this.error.set('No file selected');
     }
   }
 
   startExtraction(file: File) {
-    console.log('Starting extraction process for file:', file.name);
     this.clearExtractionResults();
     this.isExtracting.set(true);
 
     // Validate file type
     const supportedTypes = ['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'application/pdf'];
     if (!supportedTypes.includes(file.type)) {
-      console.warn('Unsupported file type:', file.type);
       this.error.set('Unsupported file type. Please use PNG, JPEG, WebP, GIF, or PDF files.');
       this.isExtracting.set(false);
       return;
     }
 
-    console.log('File validation passed, calling API...');
     this.charactersService.startExtraction(file).subscribe({
       next: (response: ExtractionJobResponse) => {
-        console.log('Extraction started successfully:', response);
         this.extractionJobToken.set(response.jobToken);
         this.result.set({ message: response.message, jobToken: response.jobToken });
         this.pollExtractionStatus();
       },
       error: (err: any) => {
-        console.error('Extraction failed in app component:', err);
         this.error.set(err?.message ?? 'Failed to start extraction');
         this.isExtracting.set(false);
       }
@@ -181,40 +170,31 @@ export class App implements OnInit, OnDestroy {
   checkExtractionStatus() {
     const token = this.extractionJobToken();
     if (!token) {
-      console.warn('No extraction job token available');
       this.error.set('No extraction job token available');
       return;
     }
 
-    console.log('Checking extraction status for token:', token);
     this.charactersService.getExtractionStatus(token).subscribe({
       next: (status: ExtractionJobStatus) => {
-        console.log('Extraction status received:', status);
         this.extractionStatus.set(status);
         
         if (status.status === 'completed') {
-          console.log('Extraction completed, success:', status.isSuccessful);
           this.isExtracting.set(false);
           this.stopPolling();
           
           if (status.isSuccessful) {
             this.getExtractionResult();
           } else {
-            console.warn('Extraction completed with errors:', status.errorMessage);
             this.error.set(status.errorMessage || 'Extraction completed with errors');
           }
         } else if (status.status === 'failed') {
-          console.error('Extraction failed:', status.errorMessage);
           this.isExtracting.set(false);
           this.stopPolling();
           this.error.set(status.errorMessage || 'Extraction failed');
-        } else {
-          console.log('Extraction still in progress, status:', status.status);
         }
         // For 'pending' or 'running' status, continue polling
       },
       error: (err: any) => {
-        console.error('Status check failed:', err);
         this.error.set(err?.message ?? 'Failed to check extraction status');
         this.isExtracting.set(false);
         this.stopPolling();
@@ -223,18 +203,15 @@ export class App implements OnInit, OnDestroy {
   }
 
   pollExtractionStatus() {
-    console.log('Starting polling for extraction status');
     // Check status immediately, then every 2 seconds
     this.checkExtractionStatus();
     
     const interval = setInterval(() => {
       const status = this.extractionStatus();
       if (!status || status.status === 'completed' || status.status === 'failed') {
-        console.log('Stopping polling - extraction finished or failed');
         this.stopPolling();
         return;
       }
-      console.log('Polling: checking status again...');
       this.checkExtractionStatus();
     }, 2000);
     

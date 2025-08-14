@@ -67,7 +67,7 @@ export class AuthService {
 
             return { token, expiresAt };
         } catch (error) {
-            console.error('Error reading token from localStorage:', error);
+
             return null;
         }
     }
@@ -80,7 +80,7 @@ export class AuthService {
             localStorage.setItem(this.TOKEN_KEY, token);
             localStorage.setItem(this.TOKEN_EXPIRY_KEY, expiresAt.toString());
         } catch (error) {
-            console.error('Error saving token to localStorage:', error);
+
         }
     }
 
@@ -92,7 +92,7 @@ export class AuthService {
             localStorage.removeItem(this.TOKEN_KEY);
             localStorage.removeItem(this.TOKEN_EXPIRY_KEY);
         } catch (error) {
-            console.error('Error clearing token from localStorage:', error);
+
         }
     }
 
