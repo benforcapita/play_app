@@ -1,5 +1,5 @@
-import { Component, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, signal, PLATFORM_ID, inject } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { CharactersService } from '../../../core/services/characters.services';
 import { Character } from '../../../core/models/character.models';
@@ -43,18 +43,23 @@ import { Character } from '../../../core/models/character.models';
 export class CharacterDetailPage {
   character = signal<Character | null>(null);
   error = signal<string | null>(null);
+  
+  private platformId = inject(PLATFORM_ID);
 
   constructor(private route: ActivatedRoute, private svc: CharactersService) {
-    const idParam = this.route.snapshot.paramMap.get('id');
-    const id = idParam ? Number(idParam) : NaN;
-    if (!id || Number.isNaN(id)) {
-      this.error.set('Invalid character id');
-      return;
-    }
+    // Only make HTTP calls when in browser to avoid HTTP calls during server-side rendering
+    if (isPlatformBrowser(this.platformId)) {
+      const idParam = this.route.snapshot.paramMap.get('id');
+      const id = idParam ? Number(idParam) : NaN;
+      if (!id || Number.isNaN(id)) {
+        this.error.set('Invalid character id');
+        return;
+      }
 
-    this.svc.get(id).subscribe({
-      next: (c) => this.character.set(c),
-      error: (err) => this.error.set(err?.message || 'Failed to load character')
-    });
+      this.svc.get(id).subscribe({
+        next: (c) => this.character.set(c),
+        error: (err) => this.error.set(err?.message || 'Failed to load character')
+      });
+    }
   }
 }

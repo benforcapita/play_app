@@ -1,5 +1,5 @@
-import { Component, computed, signal } from '@angular/core';
-import { CommonModule, NgIf, NgFor } from '@angular/common';
+import { Component, computed, signal, PLATFORM_ID, inject } from '@angular/core';
+import { CommonModule, NgIf, NgFor, isPlatformBrowser } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { CharactersService } from '../../../core/services/characters.services';
 import { Character } from '../../../core/models/character.models';
@@ -67,9 +67,14 @@ export class CharacterListPage {
   characters = signal<Character[]>([]);
   loading = signal(false);
   error = signal<string | null>(null);
+  
+  private platformId = inject(PLATFORM_ID);
 
   constructor(private svc: CharactersService, private router: Router, private auth: AuthService) {
-    this.refresh();
+    // Only refresh when in browser to avoid HTTP calls during server-side rendering
+    if (isPlatformBrowser(this.platformId)) {
+      this.refresh();
+    }
   }
 
   refresh() {
