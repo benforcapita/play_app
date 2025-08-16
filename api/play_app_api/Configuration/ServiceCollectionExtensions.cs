@@ -77,7 +77,6 @@ public static class ServiceCollectionExtensions
 
         // Add Background Services
         services.AddHostedService<ExtractionJobService>();
-        services.AddHostedService<BackgroundSyncService>();
         services.AddSingleton<JobRuntimeMonitor>();
 
         // InMemoryJobQueue removed - using database directly
