@@ -75,3 +75,6 @@ api/play_app_api.tests/obj/Debug/net9.0/*
 api/play_app_api/appsettings*.json
 api/update-container-env.sh
 api/manage-secrets.sh
+api/play_app_api/run.sh
+api/play_app_api/stop.sh
+api/play_app_api/clear.sh

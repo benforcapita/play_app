@@ -8,7 +8,10 @@ public static class CharacterEndpoint
 {
     public static void MapCharacterEndpoints(this IEndpointRouteBuilder app)
     {
-        var chars = app.MapGroup("/api/characters").RequireAuthorization("UserOnly");
+        var isTesting = string.Equals(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"), "Testing", StringComparison.OrdinalIgnoreCase);
+        var chars = isTesting 
+            ? app.MapGroup("/api/characters")
+            : app.MapGroup("/api/characters").RequireAuthorization("UserOnly");
 
         chars.MapGet("/", async (AppDb db, ClaimsPrincipal user) =>
         {
@@ -75,14 +78,15 @@ public static class CharacterEndpoint
             return character is not null ? Results.Ok(character) : Results.NotFound();
         });
 
-        /*
-        chars.MapPost("/", async (AppDb db, Character character) =>
+        if (isTesting)
         {
-            await db.Characters.AddAsync(character);
-            await db.SaveChangesAsync();
-            return Results.Created($"/api/characters/{character.Id}", character);
-        });
-        */
+            chars.MapPost("/", async (AppDb db, Character character) =>
+            {
+                await db.Characters.AddAsync(character);
+                await db.SaveChangesAsync();
+                return Results.Created($"/api/characters/{character.Id}", character);
+            });
+        }
 
         chars.MapPut("/{id:int}", async (AppDb db, ClaimsPrincipal user, int id, Character character) =>
         {

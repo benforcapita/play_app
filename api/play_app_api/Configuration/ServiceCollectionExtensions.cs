@@ -7,6 +7,8 @@ using Microsoft.Extensions.Logging;
 using play_app_api.Configuration;
 using play_app_api.Services;
 using System.Security.Claims;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 
 namespace play_app_api.Configuration;
 
@@ -75,7 +77,10 @@ public static class ServiceCollectionExtensions
 
         // Add Background Services
         services.AddHostedService<ExtractionJobService>();
+        services.AddHostedService<BackgroundSyncService>();
         services.AddSingleton<JobRuntimeMonitor>();
+
+        // InMemoryJobQueue removed - using database directly
 
         return services;
     }
@@ -89,6 +94,7 @@ public static class ServiceCollectionExtensions
         var minLevel = Environment.GetEnvironmentVariable("LOG_LEVEL") ?? appConfig.LogLevel;
         loggingBuilder.ClearProviders();
         loggingBuilder.AddConsole();
+        // Using console logging only now that we have fast database
         loggingBuilder.SetMinimumLevel(Enum.TryParse<LogLevel>(minLevel, true, out var lv) ? lv : LogLevel.Information);
 
         return services;
